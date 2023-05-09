@@ -3,15 +3,22 @@ from itertools import count
 import pandas as pd
 import matplotlib.pyplot as plt
 from matplotlib.animation import FuncAnimation
-
+from labjack import ljm
 
 #count func counts up once and gets the next vals
 
 #We're going to be taking a CSV file ( think txt) that const gets updated 
 
 
-#This plt style use just specifies what chart
+#Open first availbe labjack in Demo mode
+#handle = ljm.openS(“ANY”, “ANY”, “-2”) 
 
+#This is how we would call our t7
+#handle = ljm.openS("T7", "Ethernet", "Auto")
+
+
+
+#This plt style use just specifies what chart
 plt.style.use('fivethirtyeight')
 
 x_vals = [] 
@@ -30,7 +37,7 @@ def animate(i):
     plt.cla() 
 
     plt.plot(x, y1, label='PsiVTime')
-    plt.plot(x, y2, label='SomeOtherGraph')
+    plt.plot(x, y2, label='VoltsvsTime')
     plt.legend()
     plt.tight_layout() 
 
