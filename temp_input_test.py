@@ -9,7 +9,6 @@ except ljm.LJMError as e:
 
 # Config
 ljm.eWriteName(handle, "AIN0_NEGATIVE_CH", 1)
-ljm.eWriteName(handle, "AIN0_EF_CONFIG_A", 2)
 ljm.eWriteName(handle, "AIN0_EF_INDEX", 22)
 ljm.eWriteName(handle, "AIN0_EF_CONFIG_A", 2)
 
