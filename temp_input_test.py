@@ -1,5 +1,8 @@
-from labjack import ljm
 import logging
+import csv
+import json
+from labjack import ljm
+from datetime import datetime as dt
 
 try:
     handle = ljm.open(ljm.constants.dtT7, ljm.constants.ctUSB, "ANY")
@@ -13,18 +16,25 @@ ljm.eWriteName(handle, "AIN0_EF_INDEX", 22)
 ljm.eWriteName(handle, "AIN0_EF_CONFIG_A", 2)
 
 intervalHandle = 1
-ljm.startInterval(intervalHandle, 1000000)
+ljm.startInterval(intervalHandle, 1000)
+
+output = {'units': 'C', 'data': []}
 
 name = "AIN0_EF_READ_A"
 while True:
     try:
         res = ljm.eReadName(handle, name)
+        output['data'].append([dt.now().isoformat(), res])
         print(res)
     except ljm.LJMError as e:
         logging.error("Could not read from {}: {}".format(name, e.errorString))
     except KeyboardInterrupt:
         break;
+
     ljm.waitForNextInterval(intervalHandle)
+
+with open('data.json', 'w') as f:
+    f.write(json.dumps(output, indent=4))
 
 ljm.cleanInterval(intervalHandle)
 ljm.close(handle)
