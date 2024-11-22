@@ -20,9 +20,12 @@ python -m pip install -r requirements.txt
 ## Test
 To test if everything worked properly, run
 ```bash
+# test dearpy
+python test_dearpy.py
+
+# show full daq ui
 python daq_ui.py
 ```
-
 
 # Saving
 These are the steps to save any new packages you may have installed
@@ -36,9 +39,16 @@ python -m pip freeze > requirements.txt
 ```
 
 # Troubleshooting
-Env is different between people.
+Ensure you activated your environment with 
+```bash
+conda activate HSP
+```
 
-Sync up environment files, delete current ones, and then redownload.
+Check to see if the environment is correct. You can see the packages with
+```bash
+conda env list
+```
+If the envs are different, sync up the correct environment files, and then redownload.
 
 Ensure you're using `python -m pip...` to do things, not just the pip command. 
 Running with python -m makes sure it uses the environment pip, not the local system pip.

@@ -4,6 +4,12 @@ import threading
 import dearpygui.dearpygui as dpg
 from threading import Lock
 
+#Open first availbe labjack in Demo mode
+#handle = ljm.openS(“ANY”, “ANY”, “-2”) 
+
+#This is how we would call our t7
+#handle = ljm.openS("T7", "Ethernet", "Auto")
+
 try:
     import u3  # LabJack U3/T7 library
     labjack_available = True
