@@ -1,6 +1,44 @@
-# DAC
-Data Acquisition and Control
+# Setup
+If you don't have it already, download anaconda here: https://www.anaconda.com/download/success
 
-Barebones Matplotlib graph to simulate live data 
-"pip install -r requirements.txt"
-"python3 data_gen.py" Then "python3 r-t.py" 
+Run the following commands
+
+```bash
+# This installs mamba, which is the exact same as conda but much faster because written in C
+conda install mamba
+
+# This downloads the packages for the HSP environment, i.e. downloading all the libraries and stuff
+conda env create -n HSP -f environment.yml
+
+# This activates the environment so that you can actually use the stuff you just downloaded
+conda activate HSP
+
+# This installs some packages that don't exist in 
+python -m pip install -r requirements.txt
+```
+
+## Test
+To test if everything worked properly, run
+```bash
+python daq_ui.py
+```
+
+
+# Saving
+These are the steps to save any new packages you may have installed
+
+```bash
+# Save new conda env
+conda env export --from-history > environment.yml
+
+# Save new pip env
+python -m pip freeze > requirements.txt
+```
+
+# Troubleshooting
+Env is different between people.
+
+Sync up environment files, delete current ones, and then redownload.
+
+Ensure you're using `python -m pip...` to do things, not just the pip command. 
+Running with python -m makes sure it uses the environment pip, not the local system pip.
