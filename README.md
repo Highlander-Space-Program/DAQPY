@@ -5,6 +5,7 @@ Run the following commands
 
 ```bash
 # This installs mamba, which is the exact same as conda but much faster because written in C
+conda config --add channels conda-forge
 conda install mamba
 
 # This downloads the packages for the HSP environment, i.e. downloading all the libraries and stuff
