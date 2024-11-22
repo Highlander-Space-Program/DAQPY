@@ -5,4 +5,3 @@ channels:
   - pyg
 dependencies:
   - python==3.12.7
-prefix: /Users/brandonmarcus/miniconda3/envs/HSP
