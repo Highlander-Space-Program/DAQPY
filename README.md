@@ -1,4 +1,5 @@
 # Setup
+Download git from git https://git-scm.com/downloads
 If you don't have it already, download anaconda here: https://www.anaconda.com/download/success
 
 Run the following commands
