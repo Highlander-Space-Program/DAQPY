@@ -8,12 +8,19 @@ SCAN_LIST = ["AIN0", "AIN1"]  # Channels to read
 SCAN_RATE = 1000              # Scans per second
 BUFFER_LIMIT = 5000           # Number of samples to buffer before writing to CSV
 CSV_FILE = "streamed_data.csv"  # Output CSV file path
-def apply_scaling(value):
+def apply_scaling(value, channel):
     """
     Applies the scaling equation to a raw data value.
-    Scaled Value = (value - 0.5) * (1000 / 4) + 14
+    AIN0: Scaled Value = (421.98) * (value - 0.04) - 166.26
+    AIN1: Uses the same equation but adds 10
     """
-    return (value - 0.5) * (1000 / 4) + 14
+    if channel == "AIN1":
+        return (421.98) * (value - 0.04) - 166.26 + 7 
+    if channel == "AIN0":
+        return (421.98) * (value - 0.04) - 166.26 +3 +1
+    else :
+        return 0
+
 def configure_stream(handle, scan_list, scan_rate):
     """
     Configures the stream with the given scan list and scan rate.
@@ -21,7 +28,7 @@ def configure_stream(handle, scan_list, scan_rate):
     # Set resolution and range for each channel
     for channel in scan_list:
         ljm.eWriteName(handle, f"{channel}_RESOLUTION_INDEX", 0)  # Default resolution
-        ljm.eWriteName(handle, f"{channel}_RANGE", 10.0)  # ±10V range
+     #   ljm.eWriteName(handle, f"{channel}_RANGE", 10.0)  # ±10V range
 
     # Add channels to the scan list by address
     addresses = [ljm.nameToAddress(name)[0] for name in scan_list]
@@ -71,7 +78,7 @@ def main():
                     # Calculate the timestamp for each sample
                     sample_time = batch_start_time + timedelta(seconds=i // num_channels * sample_interval)
                     timestamp = sample_time.strftime("%H:%M:%S:%f")[:-3]  # Format timestamp
-                    scaled_data = [apply_scaling(data[i + j]) for j in range(num_channels)]
+                    scaled_data = [apply_scaling(data[i + j], SCAN_LIST[j]) for j in range(num_channels)]
                     print(f"{timestamp} | Scaled Voltages: {', '.join(f'{val:.2f}' for val in scaled_data)}")
 
 
