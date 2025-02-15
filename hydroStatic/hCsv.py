@@ -4,22 +4,32 @@ from datetime import datetime, timedelta
 from labjack import ljm
 
 # Configuration
-SCAN_LIST = ["AIN0", "AIN1"]  # Channels to read
+SCAN_LIST = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN121"]  # Channels to read
 SCAN_RATE = 1000              # Scans per second
 BUFFER_LIMIT = 5000           # Number of samples to buffer before writing to CSV
 CSV_FILE = "streamed_data.csv"  # Output CSV file path
+
 def apply_scaling(value, channel):
     """
     Applies the scaling equation to a raw data value.
-    AIN0: Scaled Value = (421.98) * (value - 0.04) - 166.26
-    AIN1: Uses the same equation but adds 10
+    AIN0: Scaled Value = (421.98) * (value - 0.04) - 166.26 + 3 + 1
+    AIN1: Uses the same equation but adds 7
+    AIN2, AIN3, AIN120: Use the same equation without additional offsets
     """
-    if channel == "AIN1":
-        return (421.98) * (value - 0.04) - 166.26 + 7 
     if channel == "AIN0":
-        return (421.98) * (value - 0.04) - 166.26 +3 +1
-    else :
-        return 0
+        return (421.98) * (value - 0.04) - 166.26 + 3 + 1
+    elif channel == "AIN1":
+        return (421.98) * (value - 0.04) - 166.26 + 7 +3
+    elif channel == "AIN2" :
+        return (421.98) * (value - 0.04) - 166.26 + 7 + 3
+    elif channel == "AIN3": 
+        return (421.98) * (value - 0.04) - 166.26 + 7 +3
+    elif channel == "AIN120" :
+        return (421.98) * (value - 0.04) - 166.26 + 7 +3
+    elif channel == "AIN121" :
+        return (421.98) * (value - 0.04) - 166.26 
+    else:
+        return 0  # Default fallback value
 
 def configure_stream(handle, scan_list, scan_rate):
     """
@@ -28,7 +38,7 @@ def configure_stream(handle, scan_list, scan_rate):
     # Set resolution and range for each channel
     for channel in scan_list:
         ljm.eWriteName(handle, f"{channel}_RESOLUTION_INDEX", 0)  # Default resolution
-     #   ljm.eWriteName(handle, f"{channel}_RANGE", 10.0)  # ±10V range
+        # ljm.eWriteName(handle, f"{channel}_RANGE", 10.0)  # ±10V range (Uncomment if needed)
 
     # Add channels to the scan list by address
     addresses = [ljm.nameToAddress(name)[0] for name in scan_list]
@@ -81,10 +91,10 @@ def main():
                     scaled_data = [apply_scaling(data[i + j], SCAN_LIST[j]) for j in range(num_channels)]
                     print(f"{timestamp} | Scaled Voltages: {', '.join(f'{val:.2f}' for val in scaled_data)}")
 
-
                     # Create a row with the timestamp and scaled data
                     row = [timestamp] + scaled_data
                     buffer.append(row)
+
                     # Write to CSV if buffer limit is reached
                     if len(buffer) >= BUFFER_LIMIT:
                         writer.writerows(buffer)
@@ -101,4 +111,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

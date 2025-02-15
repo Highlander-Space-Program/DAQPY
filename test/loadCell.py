@@ -2,7 +2,7 @@ from labjack import ljm
 import time
 
 # Open connection to the LabJack T7
-handle = ljm.openS("T7", "USB", "ANY")
+handle = ljm.openS("T7", "ANY", "ANY")
 
 # Define differential channel pairs (Positive, Negative)
 diff_pairs = [
