@@ -1,111 +1,112 @@
 import csv
 import time
-from datetime import datetime, timedelta
+from datetime import datetime
 from labjack import ljm
+import numpy as np
 
-# Configuration
-SCAN_LIST = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN121"]  # Channels to read
-SCAN_RATE = 1000              # Scans per second
-BUFFER_LIMIT = 5000           # Number of samples to buffer before writing to CSV
-CSV_FILE = "streamed_data.csv"  # Output CSV file path
+# --- NIST Type J Table ---
+temp_table = np.array([
+    -200, -190, -180, -170, -160, -150, -140, -130, -120, -110,
+    -100,  -90,  -80,  -70,  -60,  -50,  -40,  -30,  -20,  -10,
+       0,   10,   20,   30,   40,   50,   60,   70,   80,   90,
+     100,  110,  120,  130,  140,  150,  160,  170,  180,  190,
+     200
+])
+
+mv_table = np.array([
+    -8.095, -7.890, -7.659, -7.403, -7.123, -6.821, -6.500, -6.159, -5.801, -5.426,
+    -5.037, -4.633, -4.215, -3.786, -3.344, -2.893, -2.431, -1.961, -1.482, -0.995,
+    -0.501,  0.000,  0.507,  1.019,  1.537,  2.059,  2.585,  3.116,  3.650,  4.187,
+     4.726,  5.269,  5.814,  6.360,  6.909,  7.459,  8.010,  8.562,  9.115,  9.669,
+    10.224
+])
+
+def type_j_temp_from_mv(voltage_mv):
+    """Convert a measured thermocouple voltage (mV) to temperature (°C)."""
+    return np.interp(voltage_mv, mv_table, temp_table)
+
+# --- Configuration ---
+AIN_CHANNELS = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN122"]  # Single-ended inputs
+DIFF_PAIRS = [("AIN48", "AIN56"), ("AIN49", "AIN57"), ("AIN50", "AIN58")]  # Load Cell Pairs
+TC_PAIRS = [("AIN80", "AIN88"), ("AIN81", "AIN89"), ("AIN82", "AIN90")]  # Thermocouple Pairs
+BUFFER_LIMIT = 5000
+CSV_FILE = "sensor_data.csv"
 
 def apply_scaling(value, channel):
-    """
-    Applies the scaling equation to a raw data value.
-    AIN0: Scaled Value = (421.98) * (value - 0.04) - 166.26 + 3 + 1
-    AIN1: Uses the same equation but adds 7
-    AIN2, AIN3, AIN120: Use the same equation without additional offsets
-    """
+    """Applies the appropriate scaling equation based on the channel."""
     if channel == "AIN0":
-        return (421.98) * (value - 0.04) - 166.26 + 3 + 1
+        return (421.98) * (value - 0.04) - 166.26 + 4
     elif channel == "AIN1":
-        return (421.98) * (value - 0.04) - 166.26 + 7 +3
-    elif channel == "AIN2" :
-        return (421.98) * (value - 0.04) - 166.26 + 7 + 3
-    elif channel == "AIN3": 
-        return (421.98) * (value - 0.04) - 166.26 + 7 +3
-    elif channel == "AIN120" :
-        return (421.98) * (value - 0.04) - 166.26 + 7 +3
-    elif channel == "AIN121" :
-        return (421.98) * (value - 0.04) - 166.26 
+        return (421.98) * (value - 0.04) - 166.26 + 10
+    elif channel in ["AIN2", "AIN3", "AIN120"]:
+        return (421.98) * (value - 0.04) - 166.26 + 10
+    elif channel == "AIN122":
+        return (306.25) * (value - 0.04) - 132.81
     else:
-        return 0  # Default fallback value
+        return 0
 
-def configure_stream(handle, scan_list, scan_rate):
-    """
-    Configures the stream with the given scan list and scan rate.
-    """
-    # Set resolution and range for each channel
-    for channel in scan_list:
-        ljm.eWriteName(handle, f"{channel}_RESOLUTION_INDEX", 0)  # Default resolution
-        # ljm.eWriteName(handle, f"{channel}_RANGE", 10.0)  # ±10V range (Uncomment if needed)
+def apply_differential_scaling(voltage):
+    """Applies scaling to differential load cell readings."""
+    return (-(voltage * 51412) + 2.0204) / 0.45359237  # Converts voltage to weight (lbs)
 
-    # Add channels to the scan list by address
-    addresses = [ljm.nameToAddress(name)[0] for name in scan_list]
-
-    # Set the scan rate
-    ljm.eWriteName(handle, "STREAM_SCANRATE_HZ", scan_rate)
-
-    return addresses
+def configure_differential_channels(handle, diff_pairs):
+    """Configures differential channels."""
+    for pos, neg in diff_pairs:
+        ljm.eWriteName(handle, f"{pos}_RANGE", 0.01)  # Set range to ±0.01V
+        ljm.eWriteName(handle, f"{pos}_NEGATIVE_CH", int(neg[3:]))  # Assign negative channel
 
 def main():
-    handle = ljm.openS("ANY", "ANY", "ANY")  # Open the first available LabJack
+    handle = ljm.openS("ANY", "ANY", "ANY")  # Open LabJack device
     print("Opened device:", ljm.getHandleInfo(handle))
 
-    # Configure stream
-    scan_addresses = configure_stream(handle, SCAN_LIST, SCAN_RATE)
-    num_channels = len(scan_addresses)
+    configure_differential_channels(handle, DIFF_PAIRS)
+    configure_differential_channels(handle, TC_PAIRS)
 
-    print(f"Stream configured for {num_channels} channels at {SCAN_RATE} scans/second.")
-
-    # Start the stream (read 500 scans per read)
-    scans_per_read = 500  # Adjust based on buffer size and requirements
-    scan_rate_actual = ljm.eStreamStart(handle, scans_per_read, num_channels, scan_addresses, SCAN_RATE)
-    print(f"Stream started with actual scan rate: {scan_rate_actual:.2f} Hz")
-
-    # CSV Setup
     with open(CSV_FILE, mode="w", newline="") as file:
         writer = csv.writer(file)
-        # Write header
-        header = ["Timestamp"] + SCAN_LIST
+        header = ["Timestamp"] + AIN_CHANNELS + ["Total_Scaled_Weight (lbs)"] + [f"TC_{i+1} (°F)" for i in range(len(TC_PAIRS))]
         writer.writerow(header)
 
         try:
             buffer = []
             while True:
-                # Read stream data
-                ret_data = ljm.eStreamRead(handle)
-                data = ret_data[0]  # Flattened data array
+                timestamp = datetime.now().strftime("%H:%M:%S:%f")[:-3]
 
-                # Starting timestamp of the batch
-                batch_start_time = datetime.now()
+                # Read AIN Values
+                ain_values = [ljm.eReadName(handle, ch) for ch in AIN_CHANNELS]
+                scaled_ain_values = [apply_scaling(ain_values[i], AIN_CHANNELS[i]) for i in range(len(AIN_CHANNELS))]
 
-                # Calculate time interval between samples
-                sample_interval = 1.0 / scan_rate_actual  # Time per sample
+                # Read Load Cell (Weight) Differential Values
+                diff_voltages = [ljm.eReadName(handle, pair[0]) for pair in DIFF_PAIRS]
+                scaled_diffs = [apply_differential_scaling(v) for v in diff_voltages]
+                total_scaled_weight = sum(scaled_diffs)
 
-                # Process data in chunks (data is interleaved by channel)
-                for i in range(0, len(data), num_channels):
-                    # Calculate the timestamp for each sample
-                    sample_time = batch_start_time + timedelta(seconds=i // num_channels * sample_interval)
-                    timestamp = sample_time.strftime("%H:%M:%S:%f")[:-3]  # Format timestamp
-                    scaled_data = [apply_scaling(data[i + j], SCAN_LIST[j]) for j in range(num_channels)]
-                    print(f"{timestamp} | Scaled Voltages: {', '.join(f'{val:.2f}' for val in scaled_data)}")
+                # Read Thermocouple Differential Voltages
+                tc_voltages = [ljm.eReadName(handle, pair[0]) for pair in TC_PAIRS]
+                tc_temps = [type_j_temp_from_mv(v * 1000.0)*(9/2) +32 for v in tc_voltages]  # Convert V to mV and to °F
 
-                    # Create a row with the timestamp and scaled data
-                    row = [timestamp] + scaled_data
-                    buffer.append(row)
+                # Print Data
+                print(f"{timestamp} | AIN Scaled: {', '.join(f'{v:.2f}' for v in scaled_ain_values)} "
+                      f"| Weight: {total_scaled_weight:.2f} pounds | TC Temps: {', '.join(f'{t:.2f}°F' for t in tc_temps)}")
 
-                    # Write to CSV if buffer limit is reached
-                    if len(buffer) >= BUFFER_LIMIT:
-                        writer.writerows(buffer)
-                        buffer.clear()  # Clear buffer
-                        print(f"Written {BUFFER_LIMIT} rows to {CSV_FILE}")
+                # Append Data to Buffer
+                buffer.append([timestamp] + scaled_ain_values + [total_scaled_weight] + tc_temps)
 
+                # Write Buffer to CSV if limit is reached
+                if len(buffer) >= BUFFER_LIMIT:
+                    writer.writerows(buffer)
+                    file.flush()  # Ensure immediate write
+                    buffer.clear()
+                    print(f"Written {BUFFER_LIMIT} rows to {CSV_FILE}")
+
+             #   time.sleep(0.01)  # Adjust sampling rate
         except KeyboardInterrupt:
             print("\nStream interrupted by user.")
         finally:
-            # Stop the stream and close the handle
-            ljm.eStreamStop(handle)
+            if buffer:
+                writer.writerows(buffer)
+                print(f"Written remaining {len(buffer)} rows to {CSV_FILE}")
+
             ljm.close(handle)
             print("Stream stopped and device closed.")
 
