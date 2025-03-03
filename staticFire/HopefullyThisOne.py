@@ -48,7 +48,9 @@ def thermocouple_voltage_to_temperature(thermo_voltage, cj_temp_c):
     tc_temp_f = (tc_temp_c * 9/5) + 32    # convert °C to °F
     return tc_temp_f
 # --- Configuration ---
-AIN_CHANNELS = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN122"]  # Single-ended inputs
+# ETH1 ETH2 NO1 NO2 NO3 CHO1
+#AIN_CHANNELS = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN122"]  # Single-ended inputs
+AIN_CHANNELS = ["AIN122", "AIN1", "AIN120", "AIN3", "AIN0", "AIN2"]  # Single-ended inputs
 DIFF_PAIRS = [("AIN48", "AIN56"), ("AIN49", "AIN57"), ("AIN50", "AIN58"), ("AIN51", "AIN59")]  # Load Cell Pairs
 TC_PAIRS = [("AIN80", "AIN88"), ("AIN81", "AIN89"), ("AIN82", "AIN90")]  # Thermocouple Pairs
 BUFFER_LIMIT = 5000
