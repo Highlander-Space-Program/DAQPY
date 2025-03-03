@@ -30,9 +30,27 @@ mv_table = np.array([
 def type_j_temp_from_mv(voltage_mv):
     """Convert a measured thermocouple voltage (mV) to temperature (°C)."""
     return np.interp(voltage_mv, mv_table, temp_table)
-
+def thermocouple_voltage_to_temperature(thermo_voltage, cj_temp_c):
+    """
+    Convert thermocouple voltage (in volts) to temperature in °F.
+    
+    This uses a simple linear approximation:
+      - K-type thermocouple sensitivity is approximately 41 µV/°C.
+      - dT (°C) = thermo_voltage (V) / 0.000041
+      - Thermocouple temperature (°C) = Cold Junction Temperature (°C) + dT
+      - Then convert °C to °F.
+    
+    Note: This linear approximation is valid only over a narrow temperature range.
+    """
+    # Calculate the temperature difference from the thermocouple voltage
+    dT_c = thermo_voltage / 0.000041  # in °C
+    tc_temp_c = cj_temp_c + dT_c        # thermocouple temperature in °C
+    tc_temp_f = (tc_temp_c * 9/5) + 32    # convert °C to °F
+    return tc_temp_f
 # --- Configuration ---
-AIN_CHANNELS = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN122"]  # Single-ended inputs
+# ETH1 ETH2 NO1 NO2 NO3 CHO1
+#AIN_CHANNELS = ["AIN0", "AIN1", "AIN2", "AIN3", "AIN120", "AIN122"]  # Single-ended inputs
+AIN_CHANNELS = ["AIN122", "AIN1", "AIN120", "AIN3", "AIN0", "AIN2"]  # Single-ended inputs
 DIFF_PAIRS = [("AIN48", "AIN56"), ("AIN49", "AIN57"), ("AIN50", "AIN58"), ("AIN51", "AIN59")]  # Load Cell Pairs
 TC_PAIRS = [("AIN80", "AIN88"), ("AIN81", "AIN89"), ("AIN82", "AIN90")]  # Thermocouple Pairs
 BUFFER_LIMIT = 5000
@@ -296,10 +314,12 @@ def main():
 				total_scaled_weight = sum(scaled_diffs)
 	
 				# Read Thermocouple Differential Voltages
+				cj_temp_k = ljm.eReadName(handle, "TEMPERATURE_DEVICE_K")
+				cj_temp_c = cj_temp_k -273.15
 				tc_voltages = [ljm.eReadName(handle, pair[0]) for pair in TC_PAIRS]
-				print(tc_voltages[0]*1000)
-				tc_temps = [type_j_temp_from_mv(v * 1000.0)*(9/5) + 32 for v in tc_voltages]  # Convert V to mV and to °F
-		
+				print(tc_voltages[0]*1)
+				tc_temps = [ (thermocouple_voltage_to_temperature(v, cj_temp_c)) for v in tc_voltages]  # Convert V to mV and to °F
+
 				# Print Data
 				print(f"{timestamp}, {', '.join(f'{v:.2f}' for v in scaled_ain_values)} "
 				f", {total_scaled_weight:.2f}, {', '.join(f'{t:.2f}°F' for t in tc_temps)}")
