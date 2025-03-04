@@ -211,7 +211,9 @@ colors = [
 	[9, tC_03Color, backgroundColor],
 ]
 
-layout = [[sg.Table(values=[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],], headings=["Sensor", "Value"],
+layout = [
+	[sg.Button("Start Writing", key="START_WRITING", size=(20,2))],
+	[sg.Table(values=[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],], headings=["Sensor", "Value"],
 					cols_justification = ['l','r'],
 					hide_vertical_scroll = True,
 					row_height = 90,
@@ -276,6 +278,8 @@ def main():
 	configure_differential_channels(handle, DIFF_PAIRS)
 	configure_differential_channels(handle, TC_PAIRS)
 
+	write_to_csv = False
+
 	with open(CSV_FILE, mode="w", newline="") as file:
 		writer = csv.writer(file)
 		header = ["Timestamp"] + AIN_CHANNELS + ["Total_Scaled_Weight (lbs)"] + [f"TC_{i+1} (°F)" for i in range(len(TC_PAIRS))]
@@ -310,7 +314,7 @@ def main():
 				buffer.append([timestamp] + scaled_ain_values + [total_scaled_weight] + tc_temps)
 
 				# Write Buffer to CSV if limit is reached
-				if len(buffer) >= BUFFER_LIMIT:
+				if write_to_csv and len(buffer) >= BUFFER_LIMIT:
 					writer.writerows(buffer)
 					file.flush()  # Ensure immediate write
 					buffer.clear()
@@ -381,6 +385,9 @@ def main():
 				if event == 'TOT-WEIGHT':
 					tare = float(lineValues[7])
 
+				if event == 'START_WRITING':
+					write_to_csv = True
+
 				Events(event, values)
 
 				if event == sg.WIN_CLOSED:
@@ -390,6 +397,9 @@ def main():
 					
 			if event == 'TOT-WEIGHT':
 				tare = float(lineValues[7])
+
+			if event == 'START_WRITING':
+				write_to_csv = True
 
 			Events(event, values)
 			
