@@ -1,55 +1,93 @@
-# Setup
-Download git from git https://git-scm.com/downloads
-If you don't have it already, download anaconda here: https://www.anaconda.com/download/success
 
-Run the following commands
+
+# Setup
+
+## Prerequisites
+- **Git:** Download and install Git from [Git Downloads](https://git-scm.com/downloads).
+- **Miniconda:**  
+  - Download Miniconda from the [official page](https://docs.conda.io/en/latest/miniconda.html).  
+  - **Note:** There's no need to install Python separately.
+  - **Important:** During Miniconda installation, ensure you check the option to "register as default python."
+
+## Initial Terminal Setup
+1. **Close** your current terminal.
+2. Open the **Anaconda Powershell Prompt**.
+3. Type and run:
+   ```bash
+   conda init bash
+   ```
+4. Next, open **Git Bash** and navigate to your repository.
+
+## Environment Setup
+
+Run the following commands in Git Bash:
 
 ```bash
-# This installs mamba, which is the exact same as conda but much faster because written in C
-conda install mamba
-
-# This downloads the packages for the HSP environment, i.e. downloading all the libraries and stuff
+# Create the conda environment (HSP) from environment.yml
 conda env create -n HSP -f environment.yml
 
-# This activates the environment so that you can actually use the stuff you just downloaded
+# Activate the environment
 conda activate HSP
 
-# This installs some packages that don't exist in 
+# Install pip requirements
 python -m pip install -r requirements.txt
 ```
 
-## Test
-To test if everything worked properly, run
+## LJM Software Installation
+Install the LJM Software by downloading the installer from:
+[LabJack Minimal LJM Installers](https://support.labjack.com/docs/minimal-ljm-installers)
+
+## Troubleshooting GUI Issues
+If you encounter errors with the simple GUI, try installing the following packages:
+
 ```bash
-# test dearpy
+pip install --upgrade rsa
+pip install PySimpleGUI -i https://pysimplegui.net/install
+```
+
+*You may use the free trial if applicable.*
+
+---
+
+# Test
+
+To verify that everything is working correctly, run:
+
+```bash
+# Test dearpy
 python test_dearpy.py
 
-# show full daq ui
+# Show full DAQ UI
 python daq_ui.py
 ```
 
+---
+
 # Saving
-These are the steps to save any new packages you may have installed
+
+After installing any new packages, update your environment files:
 
 ```bash
-# Save new conda env
+# Update the conda environment file (environment.yml)
 conda env export --from-history > environment.yml
 
-# Save new pip env
+# Update the pip requirements file (requirements.txt)
 python -m pip freeze > requirements.txt
 ```
 
+---
+
 # Troubleshooting
-Ensure you activated your environment with 
-```bash
-conda activate HSP
-```
 
-Check to see if the environment is correct. You can see the packages with
-```bash
-conda env list
-```
-If the envs are different, sync up the correct environment files, and then redownload.
+- **Ensure you activate the correct environment:**
+  ```bash
+  conda activate HSP
+  ```
+- **Check your environments:**
+  ```bash
+  conda env list
+  ```
+  If you see different environments, sync the correct environment files and then re-download.
+- **Tip:** Always use `python -m pip ...` to ensure you are using the pip version tied to your active environment, not the system pip.
 
-Ensure you're using `python -m pip...` to do things, not just the pip command. 
-Running with python -m makes sure it uses the environment pip, not the local system pip.
+--- 
