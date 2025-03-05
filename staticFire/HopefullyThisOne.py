@@ -54,7 +54,23 @@ AIN_CHANNELS = ["AIN122", "AIN1", "AIN120", "AIN3", "AIN0", "AIN2"]  # Single-en
 DIFF_PAIRS = [("AIN48", "AIN56"), ("AIN49", "AIN57"), ("AIN50", "AIN58"), ("AIN51", "AIN59")]  # Load Cell Pairs
 TC_PAIRS = [("AIN80", "AIN88"), ("AIN81", "AIN89"), ("AIN82", "AIN90")]  # Thermocouple Pairs
 BUFFER_LIMIT = 5000
-CSV_FILE = "sensor_data.csv"
+
+file_name_layout = [
+	[sg.Text("Enter File Name:")],
+	[sg.Input(key="FILE_NAME")],
+	[sg.Button("Submit")]
+]
+
+file_name_window = sg.Window("File Name Input", file_name_layout)
+
+while True:
+	event, values = file_name_window.read()
+	if event == sg.WIN_CLOSED or event == "Submit":
+		break
+
+file_name_window.close()
+
+CSV_FILE = values["FILE_NAME"] + ".csv"
 
 def apply_scaling(value, channel):
     """Applies the appropriate scaling equation based on the channel."""
@@ -229,8 +245,11 @@ colors = [
 	[9, tC_03Color, backgroundColor],
 ]
 
+button1 = [[sg.Button("Start Writing", key="START_WRITING", size=(20,2))]]
+button2 = [[sg.Button("Stop Writing", key="STOP_WRITING", size=(20,2))]]
+
 layout = [
-	[sg.Button("Start Writing", key="START_WRITING", size=(20,2))],
+	[[sg.Column(button1), sg.Column(button2)]],
 	[sg.Table(values=[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],], headings=["Sensor", "Value"],
 					cols_justification = ['l','r'],
 					hide_vertical_scroll = True,
@@ -408,6 +427,9 @@ def main():
 				if event == 'START_WRITING':
 					write_to_csv = True
 
+				if event == 'STOP_WRITING':
+					write_to_csv = False
+
 				Events(event, values)
 
 				if event == sg.WIN_CLOSED:
@@ -420,6 +442,9 @@ def main():
 
 			if event == 'START_WRITING':
 				write_to_csv = True
+
+			if event == 'STOP_WRITING':
+				write_to_csv = False
 
 			Events(event, values)
 			
