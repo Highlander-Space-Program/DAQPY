@@ -55,23 +55,6 @@ DIFF_PAIRS = [("AIN48", "AIN56"), ("AIN49", "AIN57"), ("AIN50", "AIN58"), ("AIN5
 TC_PAIRS = [("AIN80", "AIN88"), ("AIN81", "AIN89"), ("AIN82", "AIN90")]  # Thermocouple Pairs
 BUFFER_LIMIT = 5000
 
-file_name_layout = [
-	[sg.Text("Enter File Name:")],
-	[sg.Input(key="FILE_NAME")],
-	[sg.Button("Submit")]
-]
-
-file_name_window = sg.Window("File Name Input", file_name_layout)
-
-while True:
-	event, values = file_name_window.read()
-	if event == sg.WIN_CLOSED or event == "Submit":
-		break
-
-file_name_window.close()
-
-CSV_FILE = values["FILE_NAME"] + ".csv"
-
 def apply_scaling(value, channel):
     """Applies the appropriate scaling equation based on the channel."""
     if channel == "AIN0":
@@ -95,62 +78,73 @@ def configure_differential_channels(handle, diff_pairs):
         ljm.eWriteName(handle, f"{pos}_RANGE", 0.01)  # Set range to ±0.01V
         ljm.eWriteName(handle, f"{pos}_NEGATIVE_CH", int(neg[3:]))  # Assign negative channel
 
-
-
-def Events(events, values):
+def Events(events, values, sensorList):
 	global window
-	global pT_ETH_01Graph
-	global pT_ETH_02Graph
-	global pT_NO_01Graph
-	global pT_NO_02Graph
-	global pT_NO_03Graph
-	global pT_CH_01Graph
-	global tOT_WEIGHTGraph
-	global tC_01Graph
-	global tC_02Graph
-	global tC_03Graph
 
 	if values['TABLE'] == [0]:
-		pT_ETH_01Graph = not pT_ETH_01Graph
-		window['PT-ETH-01'].update(visible=pT_ETH_01Graph)
+		sensorList[0].visible = not sensorList[0].visible
+		window['PT-ETH-01'].update(visible=sensorList[0].visible)
 
 	elif values['TABLE'] == [1]:
-		pT_ETH_02Graph = not pT_ETH_02Graph
-		window['PT-ETH-02'].update(visible=pT_ETH_02Graph)
+		sensorList[1].visible = not sensorList[1].visible
+		window['PT-ETH-02'].update(visible=sensorList[1].visible)
 
 	elif values['TABLE'] == [2]:
-		pT_NO_01Graph = not pT_NO_01Graph
-		window['PT-NO-01'].update(visible=pT_NO_01Graph)
+		sensorList[2].visible = not sensorList[2].visible
+		window['PT-NO-01'].update(visible=sensorList[2].visible)
 
 	elif values['TABLE'] == [3]:
-		pT_NO_02Graph = not pT_NO_02Graph
-		window['PT-NO-02'].update(visible=pT_NO_02Graph)
+		sensorList[3].visible = not sensorList[3].visible
+		window['PT-NO-02'].update(visible=sensorList[3].visible)
 
 	elif values['TABLE'] == [4]:
-		pT_NO_03Graph = not pT_NO_03Graph
-		window['PT-NO-03'].update(visible=pT_NO_03Graph)
+		sensorList[4].visible = not sensorList[4].visible
+		window['PT-NO-03'].update(visible=sensorList[4].visible)
 
 	elif values['TABLE'] == [5]:
-		pT_CH_01Graph = not pT_CH_01Graph
-		window['PT-CH-01'].update(visible=pT_CH_01Graph)
+		sensorList[5].visible = not sensorList[5].visible
+		window['PT-CH-01'].update(visible=sensorList[5].visible)
 
 	elif values['TABLE'] == [6]:
-		tOT_WEIGHTGraph = not tOT_WEIGHTGraph
-		window['TOT-WEIGHT'].update(visible=tOT_WEIGHTGraph)
+		sensorList[6].visible = not sensorList[6].visible
+		window['TOT-WEIGHT'].update(visible=sensorList[6].visible)
 
 	elif values['TABLE'] == [7]:
-		tC_01Graph = not tC_01Graph
-		window['TC-01'].update(visible=tC_01Graph)
+		sensorList[7].visible = not sensorList[7].visible
+		window['TC-01'].update(visible=sensorList[7].visible)
 
 	elif values['TABLE'] == [8]:
-		tC_02Graph = not tC_02Graph
-		window['TC-02'].update(visible=tC_02Graph)
+		sensorList[8].visible = not sensorList[8].visible
+		window['TC-02'].update(visible=sensorList[8].visible)
 
 	elif values['TABLE'] == [9]:
-		tC_03Graph = not tC_03Graph
-		window['TC-03'].update(visible=tC_03Graph)
+		sensorList[9].visible = not sensorList[9].visible
+		window['TC-03'].update(visible=sensorList[9].visible)
 
 	window['col2'].contents_changed()
+
+def Tare(event, sensorList, data):
+
+	if event == 'PT-ETH-01':
+		sensorList[0].Tare(data[0])
+
+	elif event == 'PT-ETH-02':
+		sensorList[1].Tare(data[1])
+
+	elif event == 'PT-NO-01':
+		sensorList[2].Tare(data[2])
+
+	elif event == 'PT-NO-02':
+		sensorList[3].Tare(data[3])
+
+	elif event == 'PT-NO-03':
+		sensorList[4].Tare(data[4])
+
+	elif event == 'PT-CH-01':
+		sensorList[5].Tare(data[5])
+
+	elif event == 'TOT-WEIGHT':
+		sensorList[6].Tare(data[6])
 
 class Sensor:
 	global x
@@ -160,6 +154,7 @@ class Sensor:
 		self.visible = False
 		self.tempData = 0
 		self.data = 0
+		self.tare = 0
 		self.title = name
 		self.unit = Unit
 		self.color = color
@@ -167,9 +162,12 @@ class Sensor:
 	def Assign(self, value):
 		self.tempData = self.data
 		try:
-			self.data = float(value)
+			self.data = float(value) - self.tare
 		except:
 			self.data = 0
+
+	def Tare(self, tare):
+		self.tare = tare
 	
 	def Lines(self, start, height, startRange, endRange, stepSize, dist):
 		self.graph.move(dist,0)
@@ -211,18 +209,33 @@ TC_01COLOR = "#FF69B4"
 TC_02COLOR = "#87CEFA" 
 TC_03COLOR = "#F5A623"
 
-FILE_PATH = 'C:\\Users\\chris\\Downloads\\test1.csv'
+file_name_layout = [
+	[sg.Text("Enter File Name:")],
+	[sg.Input(key="FILE_NAME")],
+	[sg.Button("Submit")]
+]
 
-column_layout1 = [[ sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-ETH-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-ETH-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-03', visible = False, background_color=GRAPHBACKGROUNDCOLOR)],
-			[sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-2), graph_top_right=(500,1600), key='PT-CH-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+file_name_window = sg.Window('HSP UI', file_name_layout, grab_anywhere=True, finalize=True, background_color=BACKGROUNDCOLOR, size = (1280,720), resizable=True, scaling=1)  
+
+while True:
+	event, values = file_name_window.read()
+	if event == sg.WIN_CLOSED or event == "Submit":
+		break
+
+file_name_window.close()
+
+CSV_FILE = values["FILE_NAME"] + ".csv"
+
+column_layout1 = [[ sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-ETH-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-ETH-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-NO-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-NO-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-NO-03', visible = False, background_color=GRAPHBACKGROUNDCOLOR)],
+			[sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-2), graph_top_right=(500,1600), enable_events = True, key='PT-CH-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
 			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-50), graph_top_right=(500,100), enable_events = True,  key='TOT-WEIGHT', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-03', visible = False, background_color=GRAPHBACKGROUNDCOLOR),]]
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), enable_events = True, key='TC-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), enable_events = True, key='TC-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), enable_events = True, key='TC-03', visible = False, background_color=GRAPHBACKGROUNDCOLOR),]]
 
 COLORS = [
 	[0, PT_ETH_01COLOR, BACKGROUNDCOLOR],
@@ -259,7 +272,7 @@ layout = [
 window = sg.Window('HSP UI', layout, grab_anywhere=True, finalize=True, background_color=BACKGROUNDCOLOR, size = (1920,1080), resizable=True, scaling=1)  
 
 sensorList = [
-		Sensor(window['PT-ETH-01'], "PT-ETH-01", "psi", PT_ETH_01COLOR)
+		 Sensor(window['PT-ETH-01'], "PT-ETH-01", "psi", PT_ETH_01COLOR)
 		,Sensor(window['PT-ETH-02'], "PT-ETH-02", "psi", PT_ETH_02COLOR)
 		,Sensor(window['PT-NO-01'], "PT-NO-01", "psi", PT_NO_01COLOR)
 		,Sensor(window['PT-NO-02'], "PT-NO-02", "psi", PT_NO_02COLOR)
@@ -272,17 +285,6 @@ sensorList = [
 		]
 # Draw Graph    
 x = -500
-h = 0
-pT_ETH_01Graph = False
-pT_ETH_02Graph = False
-pT_NO_01Graph = False
-pT_NO_02Graph = False
-pT_NO_03Graph = False
-pT_CH_01Graph = False
-tOT_WEIGHTGraph = False
-tC_01Graph = False
-tC_02Graph = False
-tC_03Graph = False
 
 sensorList[0].Lines(-500, 1520, 0, 1600, 250, 0)
 sensorList[1].Lines(-500, 1520, 0, 1600, 250, 0)
@@ -296,7 +298,6 @@ sensorList[8].Lines(-500, 95, -20, 100, 10, 0)
 sensorList[9].Lines(-500, 95, -20, 100, 10, 0)
 
 startingSize = (1920,1080)
-
 
 def main():
 	global x
@@ -354,10 +355,9 @@ def main():
 
 				#   time.sleep(0.01)  # Adjust sampling rate
 				'''
-				line = '0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,3'
+				
+				line = '10,101,10,01,01,151,101,101,101,101,10,101,101,101,01,101,101,3'
 				lineValues = line.split(',')
-				time = lineValues[0].split(':')
-
 				for i in range(len(sensorList)):
 					sensorList[i].Assign(lineValues[i])
 
@@ -385,34 +385,20 @@ def main():
 					sensorList[8].Lines(-250, 95, -20, 100, 10, -750)
 					sensorList[9].Lines(-250, 95, -20, 100, 10, -750)
 					
-				event, values = window.read(timeout = 1)
+				event, values = window.read(timeout = 0)
 				
-				if event == 'TOT-WEIGHT':
-					tare = float(lineValues[7])
-
 				if event == 'START_WRITING':
 					write_to_csv = True
 
 				if event == 'STOP_WRITING':
 					write_to_csv = False
 
-				Events(event, values)
+				Events(event, values, sensorList)
+
+				Tare(event, sensorList, lineValues)
 
 				if event == sg.WIN_CLOSED:
 					break
-
-			event, values = window.read(timeout = 1) 
-					
-			if event == 'TOT-WEIGHT':
-				tare = float(lineValues[7])
-
-			if event == 'START_WRITING':
-				write_to_csv = True
-
-			if event == 'STOP_WRITING':
-				write_to_csv = False
-
-			Events(event, values)
 			
 		except KeyboardInterrupt:
 			print("\nStream interrupted by user.")
