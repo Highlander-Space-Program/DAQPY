@@ -7,7 +7,7 @@ import cmd
 import csv
 import time
 from datetime import datetime
-from labjack import ljm
+#from labjack import ljm
 import numpy as np
 
 # --- NIST Type J Table ---
@@ -155,13 +155,14 @@ def Events(events, values):
 class Sensor:
 	global x
 
-	def __init__(self, window, name, Unit):
+	def __init__(self, window, name, Unit, color):
 		self.graph = window
 		self.visible = False
 		self.tempData = 0
 		self.data = 0
 		self.title = name
 		self.unit = Unit
+		self.color = color
 	
 	def Assign(self, value):
 		self.tempData = self.data
@@ -169,8 +170,6 @@ class Sensor:
 			self.data = float(value)
 		except:
 			self.data = 0
-						
-		#self.value.update(self.title + ":\n" + str(self.data) + " " + self.unit)
 	
 	def Lines(self, start, height, startRange, endRange, stepSize, dist):
 		self.graph.move(dist,0)
@@ -179,71 +178,64 @@ class Sensor:
 
 		tempTitle = self.title + " (" + self.unit + ")" 
 		
-		self.graph.DrawText(tempTitle, (0,height), color = 'gray', font = fontAndSize)
-
-		stepSize
+		self.graph.DrawText(tempTitle, (0,height), color = 'gray', font = FONTANDSIZE)
 
 		for y in range(startRange, endRange, stepSize):    
 
 			if y != 0:
 				self.graph.DrawLine((-500,y), (-450,y))    
-				self.graph.DrawText(y, (-400,y), color='gray', font=fontAndSize)  
+				self.graph.DrawText(y, (-400,y), color='gray', font=FONTANDSIZE)  
 
-	def Graph(self, color):
+	def Graph(self):
 		if (abs(self.data-self.tempData)<1):
-			self.graph.DrawCircle((x,self.data), 1, line_color = color)
+			self.graph.DrawCircle((x,self.data), 1, line_color = self.color)
 		else:
-			self.graph.DrawLine((x,self.tempData), (x,self.data), color, 2)
+			self.graph.DrawLine((x,self.tempData), (x,self.data), self.color, 2)
 
 	def getData(self):
 		return [self.title, str(round(self.data,2)) + " " + self.unit]
 			
-backgroundColor = "#121212"
-buttonColor = "#8e3563"
-disabledButton = "#000000"
-buttonBackgroundColor = "#222222"
-offColor = "#28bc64"
-onColor = "#6f0000"
-textColor = "#bcbcbc"
-fontAndSize = "Comic 15"
-font2 = "Comic 20"
-padding = [10,10]
-paddingSensor = [15,2]
+BACKGROUNDCOLOR = "#121212"
+GRAPHBACKGROUNDCOLOR = "#222222"
+TEXTCOLOR = "#bcbcbc"
+FONTANDSIZE = "Courier 15"
 
-pT_ETH_01Color = "#5C8374" 
-pT_ETH_02Color = "#087CB4" 
-pT_NO_01Color = "#F2613F" 
-pT_NO_02Color = "#E95793" 
-pT_NO_03Color = "#5C527F" 
-pT_CH_01Color = "#A3C7B3" 
-tOT_WEIGHTColor = "#FFD166" 
-tC_01Color = "#6EC2EC" 
-tC_02Color = "#8CA772" 
-tC_03Color = "#C44D2F"
+PT_ETH_01COLOR = "#FFFFFF" 
+PT_ETH_02COLOR = "#FFD700"
+PT_NO_01COLOR = "#FF4500" 
+PT_NO_02COLOR = "#00FF00"  
+PT_NO_03COLOR = "#00BFFF" 
+PT_CH_01COLOR = "#FF1493"  
+TOT_WEIGHTCOLOR = "#FFFF00" 
+TC_01COLOR = "#FF69B4" 
+TC_02COLOR = "#87CEFA" 
+TC_03COLOR = "#F5A623"
 
-column_layout1 = [[ sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-ETH-01', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-ETH-02', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-01', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-02', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-03', visible = False, background_color=buttonBackgroundColor)],
-			[sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-2), graph_top_right=(500,1600), key='PT-CH-01', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-50), graph_top_right=(500,100), enable_events = True,  key='TOT-WEIGHT', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-01', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-02', visible = False, background_color=buttonBackgroundColor),
-			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-03', visible = False, background_color=buttonBackgroundColor),]]
+FILE_PATH = 'C:\\Users\\chris\\Downloads\\test1.csv'
 
-colors = [
-	[0, pT_ETH_01Color, backgroundColor],
-	[1, pT_ETH_02Color, backgroundColor],
-	[2, pT_NO_01Color, backgroundColor],
-	[3, pT_NO_02Color, backgroundColor],
-	[4, pT_NO_03Color, backgroundColor],
-	[5, pT_CH_01Color, backgroundColor],
-	[6, tOT_WEIGHTColor, backgroundColor],
-	[7, tC_01Color, backgroundColor],
-	[8, tC_02Color, backgroundColor],
-	[9, tC_03Color, backgroundColor],
-]
+column_layout1 = [[ sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-ETH-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-ETH-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), key='PT-NO-03', visible = False, background_color=GRAPHBACKGROUNDCOLOR)],
+			[sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-2), graph_top_right=(500,1600), key='PT-CH-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-50), graph_top_right=(500,100), enable_events = True,  key='TOT-WEIGHT', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-01', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-02', visible = False, background_color=GRAPHBACKGROUNDCOLOR),
+			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,100), key='TC-03', visible = False, background_color=GRAPHBACKGROUNDCOLOR),]]
+
+COLORS = [
+	[0, PT_ETH_01COLOR, BACKGROUNDCOLOR],
+	[1, PT_ETH_02COLOR, BACKGROUNDCOLOR],
+	[2, PT_NO_01COLOR, BACKGROUNDCOLOR],
+	[3, PT_NO_02COLOR, BACKGROUNDCOLOR],
+	[4, PT_NO_03COLOR, BACKGROUNDCOLOR],
+	[5, PT_CH_01COLOR, BACKGROUNDCOLOR],
+	[6, TOT_WEIGHTCOLOR, BACKGROUNDCOLOR],
+	[7, TC_01COLOR, BACKGROUNDCOLOR],
+	[8, TC_02COLOR, BACKGROUNDCOLOR],
+	[9, TC_03COLOR, BACKGROUNDCOLOR],
+	]
 
 button1 = [[sg.Button("Start Writing", key="START_WRITING", size=(20,2))]]
 button2 = [[sg.Button("Stop Writing", key="STOP_WRITING", size=(20,2))]]
@@ -254,29 +246,30 @@ layout = [
 					cols_justification = ['l','r'],
 					hide_vertical_scroll = True,
 					row_height = 90,
-					row_colors = colors,
+					row_colors = COLORS,
 					font = "Comic 70",
-					header_background_color = backgroundColor,
-					header_text_color = textColor,
-					background_color=backgroundColor,
+					header_background_color = BACKGROUNDCOLOR,
+					header_text_color = TEXTCOLOR,
+					background_color=BACKGROUNDCOLOR,
 					key='TABLE',
 					enable_events=True,
 					expand_x=True,
-					expand_y=True,), sg.Column(column_layout1, element_justification='left', background_color=backgroundColor,  vertical_alignment='l', k = 'col2', expand_x=True , expand_y=True, size = (500,2000), scrollable=True, sbar_arrow_color=buttonBackgroundColor, sbar_background_color=buttonBackgroundColor, sbar_frame_color=buttonBackgroundColor, sbar_trough_color=buttonBackgroundColor)]]
+					expand_y=True,), sg.Column(column_layout1, element_justification='left', background_color=BACKGROUNDCOLOR,  vertical_alignment='l', k = 'col2', expand_x=True , expand_y=True, size = (500,2000), scrollable=True, sbar_arrow_color=GRAPHBACKGROUNDCOLOR, sbar_background_color=GRAPHBACKGROUNDCOLOR, sbar_frame_color=GRAPHBACKGROUNDCOLOR, sbar_trough_color=GRAPHBACKGROUNDCOLOR)]]
 
-window = sg.Window('HSP UI', layout, grab_anywhere=True, finalize=True, background_color=backgroundColor, size = (1920,1080), resizable=True, scaling=1)  
+window = sg.Window('HSP UI', layout, grab_anywhere=True, finalize=True, background_color=BACKGROUNDCOLOR, size = (1920,1080), resizable=True, scaling=1)  
 
-pT_ETH_01 = Sensor(window['PT-ETH-01'], "PT-ETH-01", "psi")
-pT_ETH_02 = Sensor(window['PT-ETH-02'], "PT-ETH-02", "psi")
-pT_NO_01 = Sensor(window['PT-NO-01'], "PT-NO-01", "psi")
-pT_NO_02 = Sensor(window['PT-NO-02'], "PT-NO-02", "psi")
-pT_NO_03 = Sensor(window['PT-NO-03'], "PT-NO-03", "psi")
-pT_CH_01 = Sensor(window['PT-CH-01'], "PT-CH-01", "psi")
-tOT_WEIGHT = Sensor(window['TOT-WEIGHT'], "TOT-Weight", "lb")
-tC_01 = Sensor(window['TC-01'], "TC-Ambient", "F")
-tC_02 = Sensor(window['TC-02'], "TC-Supply", "F")
-tC_03 = Sensor(window['TC-03'], "TC-NT", "F")
-
+sensorList = [
+		Sensor(window['PT-ETH-01'], "PT-ETH-01", "psi", PT_ETH_01COLOR)
+		,Sensor(window['PT-ETH-02'], "PT-ETH-02", "psi", PT_ETH_02COLOR)
+		,Sensor(window['PT-NO-01'], "PT-NO-01", "psi", PT_NO_01COLOR)
+		,Sensor(window['PT-NO-02'], "PT-NO-02", "psi", PT_NO_02COLOR)
+		,Sensor(window['PT-NO-03'], "PT-NO-03", "psi", PT_NO_03COLOR)
+		,Sensor(window['PT-CH-01'], "PT-CH-01", "psi", PT_CH_01COLOR)
+		,Sensor(window['TOT-WEIGHT'], "TOT-Weight", "lb", TOT_WEIGHTCOLOR)
+		,Sensor(window['TC-01'], "TC-01", "F", TC_01COLOR)
+		,Sensor(window['TC-02'], "TC-02", "F", TC_02COLOR)
+		,Sensor(window['TC-03'], "TC-03", "F", TC_03COLOR)
+		]
 # Draw Graph    
 x = -500
 h = 0
@@ -291,16 +284,16 @@ tC_01Graph = False
 tC_02Graph = False
 tC_03Graph = False
 
-pT_ETH_01.Lines(-500, 1520, 0, 1600, 250, 0)
-pT_ETH_02.Lines(-500, 1520, 0, 1600, 250, 0)
-pT_NO_01.Lines(-500, 1520, 0, 1600,  250,0)
-pT_NO_02.Lines(-500, 1520, 0, 1600,  250,0)
-pT_NO_03.Lines(-500, 1520, 0, 1600, 250, 0)
-pT_CH_01.Lines(-500, 1520, 0, 1600, 250, 0)
-tOT_WEIGHT.Lines(-500, 133, -140, 140, 20, 0)
-tC_01.Lines(-500, 95, -20, 100, 10, 0)
-tC_02.Lines(-500, 95, -20, 100, 10, 0)
-tC_03.Lines(-500, 95, -20, 100, 10, 0)
+sensorList[0].Lines(-500, 1520, 0, 1600, 250, 0)
+sensorList[1].Lines(-500, 1520, 0, 1600, 250, 0)
+sensorList[2].Lines(-500, 1520, 0, 1600,  250,0)
+sensorList[3].Lines(-500, 1520, 0, 1600,  250,0)
+sensorList[4].Lines(-500, 1520, 0, 1600, 250, 0)
+sensorList[5].Lines(-500, 1520, 0, 1600, 250, 0)
+sensorList[6].Lines(-500, 1330, -1400, 1400, 200, 0)
+sensorList[7].Lines(-500, 95, -20, 100, 10, 0)
+sensorList[8].Lines(-500, 95, -20, 100, 10, 0)
+sensorList[9].Lines(-500, 95, -20, 100, 10, 0)
 
 startingSize = (1920,1080)
 
@@ -309,11 +302,11 @@ def main():
 	global x
 	line = ""
 	tare = 0
-	handle = ljm.openS("ANY", "ANY", "ANY")  # Open LabJack device
-	print("Opened device:", ljm.getHandleInfo(handle))
+	#handle = ljm.openS("ANY", "ANY", "ANY")  # Open LabJack device
+	#print("Opened device:", ljm.getHandleInfo(handle))
 
-	configure_differential_channels(handle, DIFF_PAIRS)
-	configure_differential_channels(handle, TC_PAIRS)
+	#configure_differential_channels(handle, DIFF_PAIRS)
+	#configure_differential_channels(handle, TC_PAIRS)
 
 	write_to_csv = False
 
@@ -326,7 +319,7 @@ def main():
 			buffer = []
 			while True:
 				timestamp = datetime.now().strftime("%H:%M:%S:%f")[:-3]
-
+				'''
 				# Read AIN Values
 				ain_values = [ljm.eReadName(handle, ch) for ch in AIN_CHANNELS]
 				scaled_ain_values = [apply_scaling(ain_values[i], AIN_CHANNELS[i]) for i in range(len(AIN_CHANNELS))]
@@ -360,47 +353,20 @@ def main():
 					print(f"Written {BUFFER_LIMIT} rows to {CSV_FILE}")
 
 				#   time.sleep(0.01)  # Adjust sampling rate
-
-
+				'''
+				line = '0,0,0,0,0,5,0,0,0,0,0,0,0,0,0,0,0,3'
 				lineValues = line.split(',')
 				time = lineValues[0].split(':')
 
-				pT_ETH_01.Assign(lineValues[1])
-				pT_ETH_02.Assign(lineValues[2])
-				pT_NO_01.Assign(lineValues[3])
-				pT_NO_02.Assign(lineValues[4])
-				pT_NO_03.Assign(lineValues[5])
-				pT_CH_01.Assign(lineValues[6])
-				tOT_WEIGHT.Assign((float(lineValues[7]) - tare))
-				tC_01.Assign(lineValues[8])
-				tC_02.Assign(lineValues[9])
-				tC_03.Assign(lineValues[10])
+				for i in range(len(sensorList)):
+					sensorList[i].Assign(lineValues[i])
 
-				man = [
-					pT_ETH_01.getData(),
-					pT_ETH_02.getData(),
-					pT_NO_01.getData(),
-					pT_NO_02.getData(),
-					pT_NO_03.getData(),
-					pT_CH_01.getData(),
-					tOT_WEIGHT.getData(),
-					tC_01.getData(),
-					tC_02.getData(),
-					tC_03.getData(),
-					]
+				man = list(item.getData() for item in sensorList)
 				
-				window['TABLE'].update(values = man, row_colors = colors)
+				window['TABLE'].update(values = man, row_colors = COLORS)
 
-				pT_ETH_01.Graph(pT_ETH_01Color)
-				pT_ETH_02.Graph(pT_ETH_02Color)
-				pT_NO_01.Graph(pT_NO_01Color)
-				pT_NO_02.Graph(pT_NO_02Color)
-				pT_NO_03.Graph(pT_NO_03Color)
-				pT_CH_01.Graph(pT_CH_01Color)
-				tOT_WEIGHT.Graph(tOT_WEIGHTColor)
-				tC_01.Graph(tC_01Color)
-				tC_02.Graph(tC_02Color)
-				tC_03.Graph(tC_03Color)
+				for item in sensorList:
+					item.Graph()
 
 				x+=1
 
@@ -408,16 +374,16 @@ def main():
 
 					x = -250
 										
-					pT_ETH_01.Lines(-250, 1520, 0, 1600, 250, -750)
-					pT_ETH_02.Lines(-250, 1520, 0, 1600, 250, -750)
-					pT_NO_01.Lines(-250, 1520, 0, 1600,  250,-750)
-					pT_NO_02.Lines(-250, 1520, 0, 1600,  250,-750)
-					pT_NO_03.Lines(-250, 1520, 0, 1600, 250, -750)
-					pT_CH_01.Lines(-250, 1520, 0, 1600, 250, -750)
-					tOT_WEIGHT.Lines(-250, 133, -140, 140, 20, -750)
-					tC_01.Lines(-250, 95, -20, 100, 10, -750)
-					tC_02.Lines(-250, 95, -20, 100, 10, -750)
-					tC_03.Lines(-250, 95, -20, 100, 10, -750)
+					sensorList[0].Lines(-250, 1520, 0, 1600, 250, -750)
+					sensorList[1].Lines(-250, 1520, 0, 1600, 250, -750)
+					sensorList[2].Lines(-250, 1520, 0, 1600,  250,-750)
+					sensorList[3].Lines(-250, 1520, 0, 1600,  250,-750)
+					sensorList[4].Lines(-250, 1520, 0, 1600, 250, -750)
+					sensorList[5].Lines(-250, 1520, 0, 1600, 250, -750)
+					sensorList[6].Lines(-250, 1330, -1400, 1400, 200, -750)
+					sensorList[7].Lines(-250, 95, -20, 100, 10, -750)
+					sensorList[8].Lines(-250, 95, -20, 100, 10, -750)
+					sensorList[9].Lines(-250, 95, -20, 100, 10, -750)
 					
 				event, values = window.read(timeout = 1)
 				
@@ -455,7 +421,7 @@ def main():
 				writer.writerows(buffer)
 				print(f"Written remaining {len(buffer)} rows to {CSV_FILE}")
 
-			ljm.close(handle)
+			#ljm.close(handle)
 			print("Stream stopped and device closed.")
 
 if __name__ == "__main__":
