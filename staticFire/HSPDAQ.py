@@ -421,25 +421,35 @@ def main():
 		writer = csv.writer(file)
 		header = ["Timestamp"] + AIN_CHANNELS + ["Total_Scaled_Weight (lbs)"] + [f"TC_{i+1} (F)" for i in range(len(TC_PAIRS))]
 		writer.writerow(header)
-
+		# change logic here
 		try:
 			buffer = []
 			while True:
 				timestamp = datetime.now().strftime("%H:%M:%S:%f")[:-3]
+				scanRate = 800
+				allChannels = AIN_CHANNELS + DIFF_PAIRS + ["TEMPERATURE_DEVICE_K"] + TC_PAIRS
+				numChannels = len(allChannels)
 
+				ljm.eStreamStart(handle, scanRate, numChannels, allChannels)
+				data = ljm.eStreamRead(handle)
+
+				ain_values = data[:len(AIN_CHANNELS)]
 				# Read AIN Values
-				ain_values = [ljm.eReadName(handle, ch) for ch in AIN_CHANNELS]
+				#ain_values = [ljm.eReadName(handle, ch) for ch in AIN_CHANNELS]
 				scaled_ain_values = [apply_scaling(ain_values[i], AIN_CHANNELS[i]) for i in range(len(AIN_CHANNELS))]
 
 				# Read Load Cell (Weight) Differential Values
-				diff_voltages = [ljm.eReadName(handle, pair[0]) for pair in DIFF_PAIRS]
+				
+				#diff_voltages = [ljm.eReadName(handle, pair[0]) for pair in DIFF_PAIRS]
+				diff_voltages = data[len(AIN_CHANNELS):len(AIN_CHANNELS) + len(DIFF_PAIRS)]
 				scaled_diffs = [apply_differential_scaling(v) for v in diff_voltages]
 				total_scaled_weight = sum(scaled_diffs)
 	
 				# Read Thermocouple Differential Voltages
-				cj_temp_k = ljm.eReadName(handle, "TEMPERATURE_DEVICE_K")
-				cj_temp_c = cj_temp_k -273.15
-				tc_voltages = [ljm.eReadName(handle, pair[0]) for pair in TC_PAIRS]
+				cj_temp_k = data[len(AIN_CHANNELS) + len(DIFF_PAIRS):len(AIN_CHANNELS) + len(DIFF_PAIRS) + 1]
+				cj_temp_c = cj_temp_k - 273.15
+
+				tc_voltages = data[len(AIN_CHANNELS) + len(DIFF_PAIRS) + 1 : len(allChannels)]
 				print(tc_voltages[0]*1)
 				tc_temps = [ (thermocouple_voltage_to_temperature(v, cj_temp_c)) for v in tc_voltages]  # Convert V to mV and to °F
 
@@ -599,6 +609,7 @@ def main():
 				writer.writerows(buffer)
 				print(f"Written remaining {len(buffer)} rows to {CSV_FILE}")
 
+			ljm.eStreamStop(handle)
 			ljm.close(handle)
 			print("Stream stopped and device closed.")
 
