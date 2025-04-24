@@ -1,7 +1,6 @@
 name: HSP
 channels:
-  - conda-forge
   - defaults
-  - pyg
 dependencies:
   - python==3.12.7
+prefix: C:\Users\Alex\anaconda3\envs\HSP
