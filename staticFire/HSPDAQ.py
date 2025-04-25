@@ -311,6 +311,12 @@ COLORS = [
 
 button1 = [[sg.Button("Start Writing", key="START_WRITING", size=(20,2))]]
 button2 = [[sg.Button("Stop Writing", key="STOP_WRITING", size=(20,2))]]
+writingIndicator = [sg.Canvas(key='-CANVAS-', size=(20, 20))],
+
+def draw_light(canvas_elem, color):
+	canvas = canvas_elem.TKCanvas
+	canvas.delete("all")
+	canvas.create_oval(0, 0, 20, 20, fill=color, outline='black')
 
 TEXT = "Courier 20"
 
@@ -342,7 +348,7 @@ tabPID = [[sg.Column(image_layout, background_color=BACKGROUNDCOLOR, size=(1100,
 tabLayout = [[sg.TabGroup(selected_background_color=GRAPHBACKGROUNDCOLOR, selected_title_color = "#FFFFFF", layout = [[sg.Tab('Tab 1', tabGraph, tooltip='tip', background_color=GRAPHBACKGROUNDCOLOR), sg.Tab('Tab 2', tabPID, background_color=GRAPHBACKGROUNDCOLOR)]], tooltip='TIP2', background_color=GRAPHBACKGROUNDCOLOR, title_color=GRAPHBACKGROUNDCOLOR)]] 
 
 layout = [
-	[[sg.Column(button1), sg.Column(button2)]],
+	[sg.Column(button1), sg.Column(button2), sg.Column(writingIndicator)],
 	[sg.Table(values=[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],], headings=["Sensor", "Value"],
 					cols_justification = ['l','r'],
 					hide_vertical_scroll = True,
@@ -416,6 +422,7 @@ def main():
 	configure_differential_channels(handle, TC_PAIRS)
 
 	write_to_csv = True
+	draw_light(window['-CANVAS-'], 'green')  # Set initial light color to green
 
 	with open(CSV_FILE, mode="w", newline="") as file:
 		writer = csv.writer(file)
@@ -574,9 +581,11 @@ def main():
 				
 				if event == 'START_WRITING':
 					write_to_csv = True
+					draw_light(window['-CANVAS-'], 'green')
 
 				if event == 'STOP_WRITING':
 					write_to_csv = True
+					draw_light(window['-CANVAS-'], 'red')
 
 				if event == sg.WIN_CLOSED:
 					break
@@ -586,9 +595,11 @@ def main():
 
 			if event == 'START_WRITING':
 				write_to_csv = True
+				draw_light(window['-CANVAS-'], 'green')
 
 			if event == 'STOP_WRITING':
 				write_to_csv = True
+				draw_light(window['-CANVAS-'], 'red')
 
 			Events(event, values)
 			
