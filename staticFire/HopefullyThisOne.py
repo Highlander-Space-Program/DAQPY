@@ -11,7 +11,7 @@ import string
 import cmd
 
 import csv
-import time
+import time	
 from datetime import datetime
 from labjack import ljm
 import numpy as np
@@ -544,6 +544,7 @@ def main():
 					sensorList[7].Lines(-250, 95, -20, 100, 10, -750)
 					sensorList[8].Lines(-250, 95, -20, 100, 10, -750)
 					sensorList[9].Lines(-250, 95, -20, 100, 10, -750)
+				
 				event, values = window.read(timeout = 0)
 				Events(event, values, sensorList)
 				
