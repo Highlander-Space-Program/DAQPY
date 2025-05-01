@@ -2,6 +2,14 @@ import PySimpleGUI as sg
 import numpy as np
 import pandas as pd
 
+from datetime import datetime
+from labjack import ljm
+import numpy as np
+
+import PySimpleGUI as sg
+import numpy as np
+import pandas as pd
+
 import time
 
 import csv
@@ -348,11 +356,63 @@ csv_name = ""
 
 write_to_csv = False
 
-with open(FILE_PATH) as f:
-	while True:
-		for line in f:
-			if line.count(',') >= 10:
-				lineValues = line.split(',')
+def main():
+	global x
+	line = ""
+	handle = ljm.openS("ANY", "ANY", "ANY")  # Open LabJack device
+	print("Opened device:", ljm.getHandleInfo(handle))
+
+	configure_differential_channels(handle, DIFF_PAIRS)
+	configure_differential_channels(handle, TC_PAIRS)
+
+	write_to_csv = False
+
+	with open(CSV_FILE, mode="w", newline="") as file:
+		writer = csv.writer(file)
+		header = ["Timestamp"] + AIN_CHANNELS + ["Total_Scaled_Weight (lbs)"] + [f"TC_{i+1} (F)" for i in range(len(TC_PAIRS))]
+		writer.writerow(header)
+
+		try:
+			buffer = []
+			while True:
+				timestamp = datetime.now().strftime("%H:%M:%S:%f")[:-3]
+
+				# Read AIN Values
+				ain_values = [ljm.eReadName(handle, ch) for ch in AIN_CHANNELS]
+				scaled_ain_values = [apply_scaling(ain_values[i], AIN_CHANNELS[i]) for i in range(len(AIN_CHANNELS))]
+
+				# Read Load Cell (Weight) Differential Values
+				diff_voltages = [ljm.eReadName(handle, pair[0]) for pair in DIFF_PAIRS]
+				scaled_diffs = [apply_differential_scaling(v) for v in diff_voltages]
+				total_scaled_weight = sum(scaled_diffs)
+	
+				# Read Thermocouple Differential Voltages
+				cj_temp_k = ljm.eReadName(handle, "TEMPERATURE_DEVICE_K")
+				cj_temp_c = cj_temp_k -273.15
+				tc_voltages = [ljm.eReadName(handle, pair[0]) for pair in TC_PAIRS]
+				print(tc_voltages[0]*1)
+				tc_temps = [ (thermocouple_voltage_to_temperature(v, cj_temp_c)) for v in tc_voltages]  # Convert V to mV and to °F
+
+				# Print Data
+				print(f"{timestamp}, {', '.join(f'{v:.2f}' for v in scaled_ain_values)} "
+				f", {total_scaled_weight:.2f}, {', '.join(f'{t:.2f}°F' for t in tc_temps)}")
+				
+				line = f"{timestamp}, {', '.join(f'{v:.2f}' for v in scaled_ain_values)}" f", {total_scaled_weight:.2f}, {', '.join(f'{t:.2f}' for t in tc_temps)}"
+
+				# Append Data to Buffer
+				buffer.append([timestamp] + scaled_ain_values + [total_scaled_weight] + tc_temps)
+
+				# Write Buffer to CSV if limit is reached
+				if write_to_csv and len(buffer) >= BUFFER_LIMIT:
+					writer.writerows(buffer)
+					file.flush()  # Ensure immediate write
+					buffer.clear()
+					print(f"Written {BUFFER_LIMIT} rows to {CSV_FILE}")
+
+				#   time.sleep(0.01)  # Adjust sampling rate
+
+
+				lineValues = line.split(',')lineValues = line.split(',')
 				runTime = lineValues[0].split(':')
 				for i in range(len(sensorList)):
 					sensorList[i].Assign(lineValues[i+1])
@@ -434,3 +494,16 @@ with open(FILE_PATH) as f:
 		Events(event, values, sensorList)
 		if event == sg.WIN_CLOSED:
 			break
+			
+		except KeyboardInterrupt:
+			print("\nStream interrupted by user.")
+		finally:
+			if buffer:
+				writer.writerows(buffer)
+				print(f"Written remaining {len(buffer)} rows to {CSV_FILE}")
+
+			ljm.close(handle)
+			print("Stream stopped and device closed.")
+
+if __name__ == "__main__":
+    main()
