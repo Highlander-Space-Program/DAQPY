@@ -1,40 +1,13 @@
 import PySimpleGUI as sg
 import numpy as np
 import pandas as pd
-from sklearn.ensemble import RandomForestRegressor
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error
 
-import time as timer
-import random
-import string
-import cmd
+import time
 
 import csv
-import time	
+import time
 from datetime import datetime
-from labjack import ljm
 import numpy as np
-
-
-# 1. Load your historical dataset.
-# Assume your CSV has columns: time, supply_pressure, supply_temperature, run_pressure, run_temperature, current_mass, and full_fill_time.
-# full_fill_time is the time (in seconds) from the measurement to when the run tank reaches the target mass.
-data = pd.read_csv('trainingData.csv')
-
-# 2. Define features and target.
-# Here, our features are the current sensor readings.
-features = data[['supply_pressure', 'supply_temperature', 'run_pressure', 'run_temperature', 'current_mass']]
-target = data['full_fill_time']
-
-columns = ['supply_pressure', 'supply_temperature', 'run_pressure', 'run_temperature', 'current_mass']
-
-# 3. Split data into training and testing sets.
-X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
-
-# 4. Create and train the regression model.
-model = RandomForestRegressor(n_estimators=100, random_state=42)
-model.fit(X_train, y_train)
 
 # --- NIST Type J Table ---
 temp_table = np.array([
@@ -102,119 +75,118 @@ def configure_differential_channels(handle, diff_pairs):
 
 def Events(events, values, sensorList):
 	global window
-
+ 
 	if values['TABLE'] == [0]:
 		sensorList[0].visible = not sensorList[0].visible
 		window['PT-ETH-01'].update(visible=sensorList[0].visible)
-
+ 
 	elif values['TABLE'] == [1]:
 		sensorList[1].visible = not sensorList[1].visible
 		window['PT-ETH-02'].update(visible=sensorList[1].visible)
-
+ 
 	elif values['TABLE'] == [2]:
 		sensorList[2].visible = not sensorList[2].visible
 		window['PT-NO-01'].update(visible=sensorList[2].visible)
-
+ 
 	elif values['TABLE'] == [3]:
 		sensorList[3].visible = not sensorList[3].visible
 		window['PT-NO-02'].update(visible=sensorList[3].visible)
-
+ 
 	elif values['TABLE'] == [4]:
 		sensorList[4].visible = not sensorList[4].visible
 		window['PT-NO-03'].update(visible=sensorList[4].visible)
-
+ 
 	elif values['TABLE'] == [5]:
 		sensorList[5].visible = not sensorList[5].visible
 		window['PT-CH-01'].update(visible=sensorList[5].visible)
-
+ 
 	elif values['TABLE'] == [6]:
 		sensorList[6].visible = not sensorList[6].visible
 		window['TOT-WEIGHT'].update(visible=sensorList[6].visible)
-
+ 
 	elif values['TABLE'] == [7]:
 		sensorList[7].visible = not sensorList[7].visible
 		window['TC-01'].update(visible=sensorList[7].visible)
-
+ 
 	elif values['TABLE'] == [8]:
 		sensorList[8].visible = not sensorList[8].visible
 		window['TC-02'].update(visible=sensorList[8].visible)
-
+ 
 	elif values['TABLE'] == [9]:
 		sensorList[9].visible = not sensorList[9].visible
 		window['TC-03'].update(visible=sensorList[9].visible)
-
+ 
 	window['col2'].contents_changed()
-
+ 
 def Tare(event, sensorList, data):
-
-	if event == 'PT-ETH-01':
-		sensorList[0].Tare(data[0])
-
-	elif event == 'PT-ETH-02':
-		sensorList[1].Tare(data[1])
-
-	elif event == 'PT-NO-01':
-		sensorList[2].Tare(data[2])
-
-	elif event == 'PT-NO-02':
-		sensorList[3].Tare(data[3])
-
-	elif event == 'PT-NO-03':
-		sensorList[4].Tare(data[4])
-
-	elif event == 'PT-CH-01':
-		sensorList[5].Tare(data[5])
-
+ 
+	if event == 'PT-ETH-01' or event == 'PID_PTE01':
+		sensorList[0].dataTare(float(data[1]))
+ 
+	elif event == 'PT-ETH-02' or event == 'PID_PTE02':
+		sensorList[1].dataTare(float(data[2]))
+ 
+	elif event == 'PT-NO-01' or event == 'PID_PTN01':
+		sensorList[2].dataTare(float(data[3]))
+ 
+	elif event == 'PT-NO-02' or event == 'PID_PTN02':
+		sensorList[3].dataTare(float(data[4]))
+ 
+	elif event == 'PT-NO-03' or event == 'PID_PTN03':
+		sensorList[4].dataTare(float(data[5]))
+ 
+	elif event == 'PT-CH-01' or event == 'PID_PTCH01':
+		sensorList[5].dataTare(float(data[6]))
+ 
 	elif event == 'TOT-WEIGHT':
-		sensorList[6].Tare(data[6])
-
+		sensorList[6].dataTare(float(data[7]))
+ 
 class Sensor:
 	global x
-
+ 
 	def __init__(self, window, name, Unit, color):
 		self.graph = window
 		self.visible = False
 		self.tempData = 0
-		self.data = 0
-		self.tare = 0
+		self.data = 0.0
+		self.tare = 0.0
 		self.title = name
 		self.unit = Unit
 		self.color = color
-	
+	 
 	def Assign(self, value):
 		self.tempData = self.data
 		try:
 			self.data = float(value) - self.tare
 		except:
 			self.data = 0
-
-	def Tare(self, tare):
+ 
+	def dataTare(self, tare):
 		self.tare = tare
-	
+	 
 	def Lines(self, start, height, startRange, endRange, stepSize, dist):
 		self.graph.move(dist,0)
-		self.graph.DrawLine((-500,-500), (-500,1000))
+		self.graph.DrawLine((-500,-1500), (-500,1500))
 		self.graph.DrawLine((start,0), (500,0))
-
+ 
 		tempTitle = self.title + " (" + self.unit + ")" 
-		
+		 
 		self.graph.DrawText(tempTitle, (0,height), color = 'gray', font = FONTANDSIZE)
-
+ 
 		for y in range(startRange, endRange, stepSize):    
-
+ 
 			if y != 0:
 				self.graph.DrawLine((-500,y), (-450,y))    
 				self.graph.DrawText(y, (-400,y), color='gray', font=FONTANDSIZE)  
-
+ 
 	def Graph(self):
 		if (abs(self.data-self.tempData)<1):
 			self.graph.DrawCircle((x,self.data), 1, line_color = self.color)
 		else:
 			self.graph.DrawLine((x,self.tempData), (x,self.data), self.color, 2)
-
+ 
 	def getData(self):
-		return [self.title, str(round(self.data,2)) + " " + self.unit]
-
+		 return [self.title, str(round(self.data,2)) + " " + self.unit]
 def Place_Button(key, xPos, yPos):
 	global window
 	click = window[key].widget
@@ -223,14 +195,37 @@ def Place_Button(key, xPos, yPos):
 
 def updatePID(key, val, unit):
 	global window
-	try:
-		window[key].update(str(round(float(val),2)) + unit)
-	except:
-		window[key].update((val))
+
+	if key == 'PID_PTE01':
+		window[key].update((sensorList[0].getData())[1])
+ 
+	elif key == 'PID_PTE02':
+		window[key].update((sensorList[1].getData())[1])
+ 
+	elif key == 'PID_PTN01':
+		window[key].update((sensorList[2].getData())[1])
+ 
+	elif key == 'PID_PTN02':
+		window[key].update((sensorList[3].getData())[1])
+ 
+	elif key == 'PID_PTN03':
+		window[key].update((sensorList[4].getData())[1])
+ 
+	elif key == 'PID_PTCH01':
+		window[key].update((sensorList[5].getData())[1])
+
+	elif key == 'TOT-WEIGHT':
+		window[key].update((sensorList[6].getData())[1])
+
+	else:
+		try:
+			window[key].update(str(round(float(val),2)) + unit)
+		except:
+			window[key].update((val))
 	
-BACKGROUNDCOLOR = "#121212"
-GRAPHBACKGROUNDCOLOR = "#222222"
-TEXTCOLOR = "#FFFFFF"
+BACKGROUNDCOLOR = "#FFFFFF"
+GRAPHBACKGROUNDCOLOR = "#FFFFFF"
+TEXTCOLOR = "#000000"
 FONTANDSIZE = "Courier 15"
 
 PT_ETH_01COLOR = "#FF5733"
@@ -243,23 +238,6 @@ TOT_WEIGHTCOLOR = "#17A2B8"
 TC_01COLOR = "#C70039"
 TC_02COLOR = "#00994D"
 TC_03COLOR = "#EE00FF"
-
-file_name_layout = [
-	[sg.Text("Enter File Name:", background_color= GRAPHBACKGROUNDCOLOR)],
-	[sg.Input(key="FILE_NAME")],
-	[sg.Button("Submit", button_color= GRAPHBACKGROUNDCOLOR)]
-]
-
-file_name_window = sg.Window('HSP UI', file_name_layout, grab_anywhere=True, finalize=True, background_color=BACKGROUNDCOLOR, size = (1280,720), resizable=True, scaling=1)  
-
-while True:
-	event, values = file_name_window.read()
-	if event == sg.WIN_CLOSED or event == "Submit":
-		break
-
-file_name_window.close()
-
-CSV_FILE = values["FILE_NAME"] + ".csv"
 
 column_layout1 = [[ sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-ETH-01', background_color=GRAPHBACKGROUNDCOLOR),
 			sg.Graph(canvas_size=(500, 500),graph_bottom_left=(-500,-20), graph_top_right=(500,1600), enable_events = True, key='PT-ETH-02', background_color=GRAPHBACKGROUNDCOLOR),
@@ -282,43 +260,33 @@ COLORS = [
 	[6, TOT_WEIGHTCOLOR, BACKGROUNDCOLOR],
 	[7, TC_01COLOR, BACKGROUNDCOLOR],
 	[8, TC_02COLOR, BACKGROUNDCOLOR],
-	[9, TC_03COLOR, BACKGROUNDCOLOR],
+	[9, TC_03COLOR, BACKGROUNDCOLOR]
 	]
 
 button1 = [[sg.Button("Start Writing", key="START_WRITING", size=(20,2))]]
 button2 = [[sg.Button("Stop Writing", key="STOP_WRITING", size=(20,2))]]
 
 TEXT = "Courier 20"
-
 image_layout = [
-	[sg.Image(filename="C:\\Users\\chris\\Downloads\\output-onlinepngtools.png", background_color=BACKGROUNDCOLOR, key='IMAGE', size = (1001,957))],
-	[sg.Text(k='PID_PTN01', colors=(PT_NO_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification='right', size=(11,1))],
-	[sg.Text(k='PID_PTN02', colors=(PT_NO_02COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_PTN03', colors=(PT_NO_03COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_PTE01', colors=(PT_ETH_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_PTE02', colors=(PT_ETH_02COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_PTCH01', colors=(PT_CH_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_TC01', colors=(TC_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_TC02', colors=(TC_02COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))],
-	[sg.Text(k='PID_TC03', colors=(TC_03COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1))]
-]
-etaLayout = [
-			[sg.Text("TIME LEFT (s): ")],
-			[sg.Text(":(", k = "Method1", s = (6,1))],
-			[sg.Text(":(", k = "Method2", s = (6,1))],
-			[sg.Text(":(", k = "Method3", s = (6,1))],
-			[sg.Text(":(", k = "Method4", s = (6,1))],
-			
-]
+	 [sg.Image(filename="C:\\Users\\chris\\Downloads\\output-onlinepngtools.png", background_color=BACKGROUNDCOLOR, key='IMAGE', size = (1001,957))],
+	 [sg.Text(k='PID_PTN01', colors=(PT_NO_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification='right', size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_PTN02', colors=(PT_NO_02COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_PTN03', colors=(PT_NO_03COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_PTE01', colors=(PT_ETH_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_PTE02', colors=(PT_ETH_02COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_PTCH01', colors=(PT_CH_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_TC01', colors=(TC_01COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_TC02', colors=(TC_02COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)],
+	 [sg.Text(k='PID_TC03', colors=(TC_03COLOR, BACKGROUNDCOLOR), p = 0, font = TEXT, justification="right", size=(11,1), enable_events=True)]
+ ]
 
 tabGraph = [[sg.Column(column_layout1, element_justification='left', background_color=BACKGROUNDCOLOR, visible = True, vertical_alignment='l', k = 'col2', expand_x=True , expand_y=True, size = (500,2000), scrollable=True, sbar_arrow_color=GRAPHBACKGROUNDCOLOR, sbar_background_color=GRAPHBACKGROUNDCOLOR, sbar_frame_color=GRAPHBACKGROUNDCOLOR, sbar_trough_color=GRAPHBACKGROUNDCOLOR)]]
 
 tabPID = [[sg.Column(image_layout, background_color=BACKGROUNDCOLOR, size=(1100,1000))]]
 
-tabLayout = [[sg.TabGroup(selected_background_color=GRAPHBACKGROUNDCOLOR, selected_title_color = "#FFFFFF", layout = [[sg.Tab('Tab 1', tabGraph, tooltip='tip', background_color=GRAPHBACKGROUNDCOLOR), sg.Tab('Tab 2', tabPID, background_color=GRAPHBACKGROUNDCOLOR)]], tooltip='TIP2', background_color=GRAPHBACKGROUNDCOLOR, title_color=GRAPHBACKGROUNDCOLOR)]] 
+tabLayout = [[sg.TabGroup(selected_background_color=GRAPHBACKGROUNDCOLOR, selected_title_color = "#FFFFFF", layout = [[sg.Tab('Tab 1', tabGraph, background_color=BACKGROUNDCOLOR), sg.Tab('Tab 2', tabPID, background_color=BACKGROUNDCOLOR)]], background_color=BACKGROUNDCOLOR, title_color=GRAPHBACKGROUNDCOLOR)]] 
 
-layout = [
-	[[sg.Column(button1), sg.Column(button2)]],
+layout = [ [sg.Text("Not writing rows :(", key = "status")],
 	[sg.Table(values=[[0,0],[0,0],[0,0],[0,0],[0,0],[0,0],], headings=["Sensor", "Value"],
 					cols_justification = ['l','r'],
 					hide_vertical_scroll = True,
@@ -332,11 +300,17 @@ layout = [
 					size = (800,1000),
 					expand_x = True,
 					expand_y = True,
-					enable_events=True), 
-					sg.Column(etaLayout),
-					sg.Column(tabLayout)]]
+					enable_events=True),
+					sg.Column(tabLayout, background_color=BACKGROUNDCOLOR)]]
 
-window = sg.Window('HSP UI', layout, grab_anywhere=True, finalize=True, background_color=BACKGROUNDCOLOR, size = (1920,1080), resizable=True, scaling=1)  
+settings = [[sg.Button("Start Writing", key="START_WRITING", size=(20,2)), sg.Button("Stop Writing", key="STOP_WRITING", size=(20,2))],
+			[sg.Text("Enter File Name:", background_color= GRAPHBACKGROUNDCOLOR)],
+			[sg.Input(key="FILE_NAME")],
+			[sg.Button("Submit", button_color= GRAPHBACKGROUNDCOLOR, key = "Submit")]]
+
+megaLayout = [[sg.TabGroup(selected_background_color=GRAPHBACKGROUNDCOLOR, selected_title_color = "#FFFFFF", expand_x = True, expand_y = True, layout = [[sg.Tab('Tab 1', layout, background_color=GRAPHBACKGROUNDCOLOR), sg.Tab('Tab 2', settings, background_color=GRAPHBACKGROUNDCOLOR)]], background_color=BACKGROUNDCOLOR, title_color=GRAPHBACKGROUNDCOLOR)]] 
+
+window = sg.Window('HSP UI', megaLayout, grab_anywhere=True, finalize=True, background_color=BACKGROUNDCOLOR, size = (1920,1080), resizable=True, scaling=1)  
 
 sensorList = [
 		 Sensor(window['PT-ETH-01'], "PT-ETH-01", "psi", PT_ETH_01COLOR)
@@ -370,77 +344,16 @@ offsetX = 15
 offsetY = 14
 
 FILE_PATH = 'trimmedblowup.csv'
+csv_name = ""
 
-mass = []
-massTime1 = []
-timestart = True
-lastDataPoint = 0
-firstTare = True
-massTime1 = []
-smallX = 0
-coefficientstwo = np.array([1.72501276, -24.80675432, 95.42369204])
-methodtwo = list(range(0, 200, 1))
-methodtwoList = (np.polyval(coefficientstwo, np.array(list(range(0, 200, 1))))).tolist()
+write_to_csv = False
 
-def main():
-	global x
-	line = ""
-	handle = ljm.openS("ANY", "ANY", "ANY")  # Open LabJack device
-	print("Opened device:", ljm.getHandleInfo(handle))
-
-	configure_differential_channels(handle, DIFF_PAIRS)
-	configure_differential_channels(handle, TC_PAIRS)
-
-	write_to_csv = False
-
-	with open(CSV_FILE, mode="w", newline="") as file:
-		writer = csv.writer(file)
-		header = ["Timestamp"] + AIN_CHANNELS + ["Total_Scaled_Weight (lbs)"] + [f"TC_{i+1} (F)" for i in range(len(TC_PAIRS))]
-		writer.writerow(header)
-
-		try:
-			buffer = []
-			while True:
-				timestamp = datetime.now().strftime("%H:%M:%S:%f")[:-3]
-
-				# Read AIN Values
-				ain_values = [ljm.eReadName(handle, ch) for ch in AIN_CHANNELS]
-				scaled_ain_values = [apply_scaling(ain_values[i], AIN_CHANNELS[i]) for i in range(len(AIN_CHANNELS))]
-
-				# Read Load Cell (Weight) Differential Values
-				diff_voltages = [ljm.eReadName(handle, pair[0]) for pair in DIFF_PAIRS]
-				scaled_diffs = [apply_differential_scaling(v) for v in diff_voltages]
-				total_scaled_weight = sum(scaled_diffs)
-	
-				# Read Thermocouple Differential Voltages
-				cj_temp_k = ljm.eReadName(handle, "TEMPERATURE_DEVICE_K")
-				cj_temp_c = cj_temp_k -273.15
-				tc_voltages = [ljm.eReadName(handle, pair[0]) for pair in TC_PAIRS]
-				print(tc_voltages[0]*1)
-				tc_temps = [ (thermocouple_voltage_to_temperature(v, cj_temp_c)) for v in tc_voltages]  # Convert V to mV and to °F
-
-				# Print Data
-				print(f"{timestamp}, {', '.join(f'{v:.2f}' for v in scaled_ain_values)} "
-				f", {total_scaled_weight:.2f}, {', '.join(f'{t:.2f}°F' for t in tc_temps)}")
-				
-				line = f"{timestamp}, {', '.join(f'{v:.2f}' for v in scaled_ain_values)}" f", {total_scaled_weight:.2f}, {', '.join(f'{t:.2f}' for t in tc_temps)}"
-
-				# Append Data to Buffer
-				buffer.append([timestamp] + scaled_ain_values + [total_scaled_weight] + tc_temps)
-
-				# Write Buffer to CSV if limit is reached
-				if write_to_csv and len(buffer) >= BUFFER_LIMIT:
-					writer.writerows(buffer)
-					file.flush()  # Ensure immediate write
-					buffer.clear()
-					print(f"Written {BUFFER_LIMIT} rows to {CSV_FILE}")
-
-				#   time.sleep(0.01)  # Adjust sampling rate
-
-
+with open(FILE_PATH) as f:
+	while True:
+		for line in f:
+			if line.count(',') >= 10:
 				lineValues = line.split(',')
 				runTime = lineValues[0].split(':')
-
 				for i in range(len(sensorList)):
 					sensorList[i].Assign(lineValues[i+1])
 
@@ -452,63 +365,6 @@ def main():
 					item.Graph()
 
 				x+=1
-
-				if float(lineValues[4]) > 400.00:
-					if firstTare:
-						loadTare = abs(float(lineValues[7]))
-						firstTare = False	
-					
-
-					live_data = {
-						'supply_pressure': [lineValues[3]],
-						'supply_temperature': [lineValues[8]],
-						'run_pressure': [lineValues[4]],
-						'run_temperature': [lineValues[9]],
-						'current_mass': [abs(float(lineValues[7])) - loadTare]
-					}
-
-					live_features = pd.DataFrame(live_data, columns=columns)
-					predicted_remaining_time = model.predict(live_features)
-					print("Predicted remaining time (seconds):", predicted_remaining_time[0])
-					window['Method2'].update(round(predicted_remaining_time[0], 2))
-
-					if (abs(float(lineValues[7])) - loadTare) >= 5:
-					
-						if timestart:
-							hourTare = int(runTime[0])
-							minTare = int(runTime[1])
-							secTare = int(runTime[2])
-							nanSecTare = int(runTime[3])
-							timestart = False
-						
-						timeNow = (hourTare - int(runTime[0])) * 3600 + (minTare - int(runTime[1])) * 60 + (secTare - int(runTime[2])) + (nanSecTare - int(runTime[3])) * 0.001
-
-						mass.append(abs(float(lineValues[7])) - loadTare)
-						methodtwo.append(mass[-1])
-						massTime1.append(abs(timeNow))
-						methodtwoList.append(massTime1[-1])
-						
-						massSamples = np.array(mass, dtype='float32')
-						massTime = np.array(massTime1, dtype='float32')
-						methodtwoArray = np.array(methodtwo, dtype='float32')
-						methodtwoListArray = np.array(methodtwoList, dtype='float32')
-						
-						# Remove NaN and infinite values
-						valid_indices = ~(np.isnan(methodtwoArray) | np.isnan(methodtwoListArray) | np.isinf(methodtwoArray) | np.isinf(methodtwoListArray))
-						methodtwoArray = methodtwoArray[valid_indices]
-						methodtwoListArray = methodtwoListArray[valid_indices]
-
-						# Remove NaN and infinite values
-						valid_indices = ~(np.isnan(massSamples) | np.isnan(massTime) | np.isinf(massSamples) | np.isinf(massTime))
-						massSamples = massSamples[valid_indices]
-						massTime = massTime[valid_indices]
-
-						if len(massSamples) >= 3 and len(np.unique(massTime)) > 1:
-							coefficients = np.polyfit(massSamples, massTime, 2)
-							newCoefficients = np.polyfit(methodtwoArray, methodtwoListArray, 2)
-							window['Method1'].update(str(round(np.polyval(coefficients, 17) - massTime1[-1])))
-							window['Method3'].update(str(round(np.polyval(newCoefficients, 17) - massTime[-1])))
-							window['Method4'].update(str(round(np.polyval(coefficientstwo, 17) - massTime[-1])))
 						
 				Place_Button('PID_PTN01', 715 + offsetX, 596 + offsetY) # (7,7)
 				Place_Button('PID_PTN02', 411 + offsetX, 387 + offsetY) # (7,7)
@@ -545,43 +401,36 @@ def main():
 					sensorList[8].Lines(-250, 95, -20, 100, 10, -750)
 					sensorList[9].Lines(-250, 95, -20, 100, 10, -750)
 				
-				event, values = window.read(timeout = 0)
+				event, values = window.read(timeout = 0)	
+
 				Events(event, values, sensorList)
-				
-				if event == 'TOT-WEIGHT':
-					tare = float(lineValues[7])
+				Tare(event, sensorList, lineValues)
+				if (event == 'Submit'):
+					csv_name = values['FILE_NAME'] + ".csv"
+					file = open(str(values['FILE_NAME'] + ".csv"), mode="w", newline="")
+					writer = csv.writer(file, quoting=csv.QUOTE_MINIMAL)
+					header = ["Timestamp"] + AIN_CHANNELS + ["Total_Scaled_Weight (lbs)"] + [f"TC_{i+1} (F)" for i in range(len(TC_PAIRS))]
+					writer.writerow(header)		
+
+				# Write Buffer to CSV if limit is reached
+				if write_to_csv and csv_name != "":
+					window['status'].update(f"Writing rows to {csv_name} :) ")
+					textToWrite = [value.strip() for value in lineValues]
+					writer.writerow(textToWrite)
+					file.flush()  # Ensure immediate write
+					print(f"Written rows to {csv_name}")
 
 				if event == 'START_WRITING':
 					write_to_csv = True
-
 				if event == 'STOP_WRITING':
+					window['status'].update(f"Not writing any rows :( ")
 					write_to_csv = False
 
 				if event == sg.WIN_CLOSED:
 					break
 
-			event, values = window.read(timeout = 1) 
-					
-			if event == 'TOT-WEIGHT':
-				tare = float(lineValues[7])
+		event, values = window.read(timeout = 0) 
 
-			if event == 'START_WRITING':
-				write_to_csv = True
-
-			if event == 'STOP_WRITING':
-				write_to_csv = False
-
-			Events(event, values)
-			
-		except KeyboardInterrupt:
-			print("\nStream interrupted by user.")
-		finally:
-			if buffer:
-				writer.writerows(buffer)
-				print(f"Written remaining {len(buffer)} rows to {CSV_FILE}")
-
-			ljm.close(handle)
-			print("Stream stopped and device closed.")
-
-if __name__ == "__main__":
-    main()
+		Events(event, values, sensorList)
+		if event == sg.WIN_CLOSED:
+			break
