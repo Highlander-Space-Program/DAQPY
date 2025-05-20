@@ -1,16 +1,65 @@
-contourpy==1.3.2
-cycler==0.12.1
-fonttools==4.57.0
-kiwisolver==1.4.8
-matplotlib==3.10.1
-modern-robotics==1.1.1
-numpy==2.2.5
+aiohappyeyeballs==2.6.1
+aiohttp==3.11.18
+aiosignal==1.3.2
+attrs==25.3.0
+blinker==1.9.0
+cachetools==5.5.2
+certifi==2025.4.26
+charset-normalizer==3.4.2
+click==8.1.8
+dash==3.0.4
+digi-xbee==1.5.0
+durationpy==0.9
+Flask==3.0.3
+frozenlist==1.6.0
+google-auth==2.40.1
+idna==3.10
+importlib_metadata==8.7.0
+inflection==0.5.1
+iso8601==2.1.0
+itsdangerous==2.2.0
+Jinja2==3.1.6
+joblib @ file:///home/conda/feedstock_root/build_artifacts/joblib_1746352627188/work
+kopf==1.37.5
+kubernetes==32.0.1
+labjack-ljm==1.23.0
+MarkupSafe==3.0.2
+multidict==6.4.3
+narwhals==1.38.0
+nest-asyncio==1.6.0
+numpy @ file:///Users/runner/miniforge3/conda-bld/numpy_1745118938152/work/dist/numpy-2.2.5-cp312-cp312-macosx_11_0_arm64.whl#sha256=0c46cd10014e318032c147afea7ac25ac1e752c79190a67c8d3f8c8981fa67d2
+oauthlib==3.2.2
 packaging==25.0
-pillow==11.2.1
-pyparsing==3.2.3
+paho-mqtt==2.1.0
+pandas @ file:///Users/runner/miniforge3/conda-bld/pandas_1744430505682/work
+plotly==6.0.1
+propcache==0.3.1
+pyasn1==0.6.1
+pyasn1_modules==0.4.2
+pyserial==3.5
 PySide6==6.9.0
-PySide6_Addons==6.9.0
-PySide6_Essentials==6.9.0
-python-dateutil==2.9.0.post0
+PySimpleGUI==5.0.10
+python-box==7.3.2
+python-dateutil @ file:///home/conda/feedstock_root/build_artifacts/python-dateutil_1733215673016/work
+python-json-logger==3.3.0
+pytz @ file:///home/conda/feedstock_root/build_artifacts/pytz_1742920838005/work
+PyYAML==6.0.2
+pyzed==1.3.0
+requests==2.32.3
+requests-oauthlib==2.0.0
+retrying==1.3.4
+rsa==4.9.1
+scikit-learn @ file:///Users/runner/miniforge3/conda-bld/scikit-learn_1736496824048/work/dist/scikit_learn-1.6.1-cp312-cp312-macosx_11_0_arm64.whl#sha256=b73b4426f1e03a197903eddede31a62b6859e1eb5d298b145d003d742720c9f7
+scipy @ file:///Users/runner/miniforge3/conda-bld/scipy-split_1739790747129/work/dist/scipy-1.15.2-cp312-cp312-macosx_11_0_arm64.whl#sha256=6377b40ec578974afe4a77d938cf02b8494de15d4ba3ab3b9cb5f71d23b06a92
+setuptools==78.1.1
 shiboken6==6.9.0
-six==1.17.0
+six @ file:///home/conda/feedstock_root/build_artifacts/six_1733380938961/work
+threadpoolctl @ file:///home/conda/feedstock_root/build_artifacts/threadpoolctl_1741878222898/work
+typing_extensions==4.13.2
+tzdata @ file:///home/conda/feedstock_root/build_artifacts/python-tzdata_1742745135198/work
+urllib3==2.4.0
+websocket-client==1.8.0
+Werkzeug==3.0.6
+wheel==0.45.1
+yarl==1.20.0
+zipp==3.21.0
