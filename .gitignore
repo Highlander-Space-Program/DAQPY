@@ -4,6 +4,7 @@ __pycache__/
 *$py.class
 .DS_Store
 *.csv
+*/control_panel_log.txt
 
 # C extensions
 *.so

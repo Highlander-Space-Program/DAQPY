@@ -87,8 +87,9 @@ BOARD_INFO_LOOKUP_TABLE = {
     0x03: {"hw_id_struct": {"mcu_id1": 0x00310043, "mcu_id2": 0x48585311, "mcu_id3": 0x20373733}, "name": "MICHELANGELO", "description": "FV-NO4 Related", "type": "ServoBoard", "components_hosted": ["FV-N04", "TC-04", "H-04"]},
     0x04: {"hw_id_struct": {"mcu_id1": 0x003a0042, "mcu_id2": 0x48585311, "mcu_id3": 0x20373733}, "name": "RAPHAEL", "description": "FV-PYRO Related", "type": "ServoBoard", "components_hosted": ["FV-PYRO", "TC-05", "H-05"]},
     0x11: {"hw_id_struct": {"mcu_id1": 0x002b002c, "mcu_id2": 0x48585314, "mcu_id3": 0x20373733}, "name": "SPLINTER", "description": "PT/LC Sensor Board 1", "type": "SensorBoard", "components_hosted": ["CH-01", "N-01"]},
-    0x12: {"hw_id_struct": {"mcu_id1": 0x0032001e, "mcu_id2": 0x46304317, "mcu_id3": 0x20383557}, "name": "APRIL", "description": "PT Sensor Board 2", "type": "SensorBoard", "components_hosted": ["PT-03", "N-04"]},
-    0x20: {"hw_id_struct": {"mcu_id1": 0x0042003d, "mcu_id2": 0x3034510d, "mcu_id3": 0x37363432}, "name": "CASEY", "description": "PAD-CONTROLLER", "type": "ControllerBoard", "components_hosted": []}
+    0x12: {"hw_id_struct": {"mcu_id1": 0x003a003b, "mcu_id2": 0x32305305, "mcu_id3": 0x31333246}, "name": "APRIL", "description": "PT Sensor Board 2", "type": "SensorBoard", "components_hosted": ["PT-03", "N-04"]},
+    0x20: {"hw_id_struct": {"mcu_id1": 0x0042003d, "mcu_id2": 0x3034510d, "mcu_id3": 0x37363432}, "name": "CASEY", "description": "PAD-CONTROLLER", "type": "ControllerBoard", "components_hosted": []},
+    0x21: {"hw_id_struct": {"mcu_id1": 0x0025003e, "mcu_id2": 0x3034510d, "mcu_id3": 0x37363432}, "name": "SHREDDER", "description": "FC-01 (Flight Computer)", "type": "ControllerBoard", "components_hosted": []}
 }
 
 def get_board_id_by_name(name_to_find):
@@ -146,10 +147,10 @@ LABJACK_SAMPLING_INTERVAL_MS = 10  # Read LabJack data every 100ms (10 Hz)
 # The data_processor will parse the number from the negative channel name part.
 # These are taken from your HSPDAQ.py example.
 LABJACK_LOADCELL_DIFF_PAIRS = [
-    ("AIN48", "AIN56"),
+#  ("AIN48", "AIN56"),
     ("AIN49", "AIN57"),
-    ("AIN50", "AIN58"),
-    ("AIN51", "AIN59"),
+    # ("AIN50", "AIN58"),
+    # ("AIN51", "AIN59"),
 ]
 # Name for the UI and logging for the summed load cell data from LabJack.
 # If this name matches a LoadCell name in LOADCELL_LOOKUP_TABLE (CAN-based),
