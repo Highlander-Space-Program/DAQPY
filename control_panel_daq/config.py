@@ -43,7 +43,9 @@ MESSAGE_TYPE = {
     "MSG_TYPE_HEATER": 4,
     "MSG_TYPE_LED": 5,
     "MSG_TYPE_FLASH_SIGNAL": 6,
-    "MSG_TYPE_LOADCELL": 7,
+    "MSG_TYPE_IMU_ACCEL": 7,
+    "MSG_TYPE_IMU_GYRO": 8,
+    "MSG_TYPE_BAROMETER": 9,    
     "MSG_TYPE_BREAKWIRE_STATUS": 19,
     "MSG_TYPE_IGNITER_STATUS": 20,
     "MSG_TYPE_AUTO_MODE_STATUS": 21,
@@ -61,10 +63,11 @@ BOARD_CAN_ID_MAPPING = {
     "SENDER_RAPHAEL": 0x04,
     "SENDER_SPLINTER": 0x11,
     "SENDER_APRIL": 0x12,
+    "SENDER_BAXTER": 0x13,
     "SENDER_CASEY": 0x20,
-    "SENDER_PAD_CONTROLLER": 0x20,
+    "SENDER_PAD_CONTROLLER": 0x21,
     "SENDER_BREAK_WIRE": 0,
-    "SENDER_TESTER_BOARD_SW": 4,
+    # "SENDER_TESTER_BOARD_SW": 4,
     "SENDER_HW_TESTER": 254,
     "SENDER_PC": 255
 }
@@ -86,8 +89,9 @@ BOARD_INFO_LOOKUP_TABLE = {
     0x02: {"hw_id_struct": {"mcu_id1": 0x0032002D, "mcu_id2": 0x48585314, "mcu_id3": 0x20373733}, "name": "LEONARDO", "description": "FV-NO3 Related", "type": "ServoBoard", "components_hosted": ["FV-N03", "TC-03", "H-03"]},
     0x03: {"hw_id_struct": {"mcu_id1": 0x00310043, "mcu_id2": 0x48585311, "mcu_id3": 0x20373733}, "name": "MICHELANGELO", "description": "FV-NO4 Related", "type": "ServoBoard", "components_hosted": ["FV-N04", "TC-04", "H-04"]},
     0x04: {"hw_id_struct": {"mcu_id1": 0x003a0042, "mcu_id2": 0x48585311, "mcu_id3": 0x20373733}, "name": "RAPHAEL", "description": "FV-PYRO Related", "type": "ServoBoard", "components_hosted": ["FV-PYRO", "TC-05", "H-05"]},
-    0x11: {"hw_id_struct": {"mcu_id1": 0x002b002c, "mcu_id2": 0x48585314, "mcu_id3": 0x20373733}, "name": "SPLINTER", "description": "PT/LC Sensor Board 1", "type": "SensorBoard", "components_hosted": ["CH-01", "N-01"]},
-    0x12: {"hw_id_struct": {"mcu_id1": 0x003a003b, "mcu_id2": 0x32305305, "mcu_id3": 0x31333246}, "name": "APRIL", "description": "PT Sensor Board 2", "type": "SensorBoard", "components_hosted": ["PT-03", "N-04"]},
+    0x11: {"hw_id_struct": {"mcu_id1": 0x003c0032, "mcu_id2": 0x32305305, "mcu_id3": 0x31333246}, "name": "SPLINTER", "description": "PT Sensor Board 1", "type": "SensorBoard", "components_hosted": ["CH-01", "N-01"]},
+    0x12: {"hw_id_struct": {"mcu_id1": 0x003a003b, "mcu_id2": 0x32305305, "mcu_id3": 0x31333246}, "name": "APRIL", "description": "PT Sensor Board 2", "type": "SensorBoard", "components_hosted": ["E-01", "N-04"]},
+    0x13: {"hw_id_struct": {"mcu_id1": 0x003e003a, "mcu_id2": 0x32305305, "mcu_id3": 0x31333246}, "name": "BAXTER", "description": "PT Sensor Board 3", "type": "SensorBoard", "components_hosted": ["PT-05", "PT-06"]},
     0x20: {"hw_id_struct": {"mcu_id1": 0x0042003d, "mcu_id2": 0x3034510d, "mcu_id3": 0x37363432}, "name": "CASEY", "description": "PAD-CONTROLLER", "type": "ControllerBoard", "components_hosted": []},
     0x21: {"hw_id_struct": {"mcu_id1": 0x0025003e, "mcu_id2": 0x3034510d, "mcu_id3": 0x37363432}, "name": "SHREDDER", "description": "FC-01 (Flight Computer)", "type": "ControllerBoard", "components_hosted": []}
 }
@@ -122,17 +126,33 @@ PT_LOOKUP_TABLE = [
     {"parent_board_id_hex": get_board_id_by_name("SPLINTER"), "can_id": 0x03110310, "name": "N-01", "purpose": "Fill Line", "data_message_sender_name": "SPLINTER", "data_message_instance_id": 2, "freq": 5000, "gain": 12.8114, "offset": 2122, "type": 'B', "adc_min_voltage": 0.0, "adc_max_voltage": 1.0, "unit": "PSI", "type": "PressureTransducer"},
     {"parent_board_id_hex": get_board_id_by_name("APRIL"), "can_id": 0x03120308, "name": "E-01", "purpose": "Ethanol Tank", "data_message_sender_name": "APRIL", "data_message_instance_id": 1, "freq": 5000, "gain": 20.79, "offset": 2893, "type": 'B', "adc_min_voltage": 0.0, "adc_max_voltage": 1.0, "unit": "PSI", "type": "PressureTransducer"},
     {"parent_board_id_hex": get_board_id_by_name("APRIL"), "can_id": 0x03120310, "name": "N-04", "purpose": "Nitrous", "data_message_sender_name": "APRIL", "data_message_instance_id": 2, "freq": 100, "gain": 13.33, "offset": 2636, "type": 'A', "adc_min_voltage": 0.0, "adc_max_voltage": 1.0, "unit": "PSI", "type": "PressureTransducer"},
+    {"parent_board_id_hex": get_board_id_by_name("BAXTER"), "can_id": 0x03130308, "name": "PT-05", "purpose": "UNKNOWN", "data_message_sender_name": "BAXTER", "data_message_instance_id": 1, "freq": 5000, "gain": 13, "offset": 2893, "type": 'B', "adc_min_voltage": 0.0, "adc_max_voltage": 1.0, "unit": "PSI", "type": "PressureTransducer"},
+    {"parent_board_id_hex": get_board_id_by_name("BAXTER"), "can_id": 0x03130310, "name": "PT-06", "purpose": "UNKNOWN", "data_message_sender_name": "BAXTER", "data_message_instance_id": 2, "freq": 100, "gain": 13, "offset": 2636, "type": 'A', "adc_min_voltage": 0.0, "adc_max_voltage": 1.0, "unit": "PSI", "type": "PressureTransducer"},
 ]
-#y=0.0481x-128.2
-LOADCELL_LOOKUP_TABLE = [ # CAN-based Load Cells
-    # {"parent_board_id_hex": get_board_id_by_name("SPLINTER"), "can_id": 0x00110708, "name": "LC-01", "purpose": "Thrust Measurement (CAN)", "update_freq": 1000, "unit": "lbf"},
+
+ACCEL_LOOKUP_TABLE = [ # CAN-based Load Cells
+    {"parent_board_id_hex": get_board_id_by_name("SHREDDER"), "can_id": 0x06210701, "name": "AM-01", "purpose": "Accelerometer", "update_freq": 1000, "unit": "m/s^2"},
 ]
+
+GYRO_LOOKUP_TABLE = [ # CAN-based Load Cells
+    {"parent_board_id_hex": get_board_id_by_name("SHREDDER"), "can_id": 0x06210701, "name": "GM-01", "purpose": "Gyrometer", "update_freq": 1000, "unit": "deg/s^2"},
+]
+
+BAROMETER_LOOKUP_TABLE = [ # CAN-based Load Cells
+    {"parent_board_id_hex": get_board_id_by_name("SHREDDER"), "can_id": 0x06210701, "name": "BM-01", "purpose": "Barometer", "update_freq": 1000, "unit": "lbf"},
+]
+
+    # "MSG_TYPE_IMU_ACCEL": 7,
+    # "MSG_TYPE_IMU_GYRO": 8,
+    # "MSG_TYPE_BAROMETER": 9, 
 
 # Combined list of all configured components (CAN-based initially)
 ALL_COMPONENT_CONFIGS = (SERVO_LOOKUP_TABLE +
                          THERMO_LOOKUP_TABLE +
                          PT_LOOKUP_TABLE +
-                         LOADCELL_LOOKUP_TABLE +
+                         ACCEL_LOOKUP_TABLE +
+                         GYRO_LOOKUP_TABLE +
+                         BAROMETER_LOOKUP_TABLE +
                          HEATER_LOOKUP_TABLE)
 
 # >>> LabJack Load Cell Configuration <<<
@@ -209,7 +229,9 @@ def add_to_lookup(item_list, comp_type_str, msg_type_val):
 add_to_lookup(SERVO_LOOKUP_TABLE, "Servo", MESSAGE_TYPE["MSG_TYPE_SERVO"])
 add_to_lookup(THERMO_LOOKUP_TABLE, "Thermocouple", MESSAGE_TYPE["MSG_TYPE_THERMOCOUPLE"])
 add_to_lookup(PT_LOOKUP_TABLE, "PressureTransducer", MESSAGE_TYPE["MSG_TYPE_PRESSURE"])
-add_to_lookup(LOADCELL_LOOKUP_TABLE, "LoadCell", MESSAGE_TYPE["MSG_TYPE_LOADCELL"]) # CAN Loadcells
+add_to_lookup(ACCEL_LOOKUP_TABLE, "Accel", MESSAGE_TYPE["MSG_TYPE_IMU_ACCEL"])
+add_to_lookup(GYRO_LOOKUP_TABLE, "Gyro", MESSAGE_TYPE["MSG_TYPE_IMU_GYRO"])
+add_to_lookup(BAROMETER_LOOKUP_TABLE, "Barometer", MESSAGE_TYPE["MSG_TYPE_BAROMETER"])
 add_to_lookup(HEATER_LOOKUP_TABLE, "Heater", MESSAGE_TYPE["MSG_TYPE_HEATER"])
 
 # If the LabJack component was added to ALL_COMPONENT_CONFIGS and needs to be in COMPONENT_CONFIG_BY_NAME

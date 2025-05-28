@@ -265,6 +265,9 @@ class DataProcessor(QObject):
             app_logger.error(err_msg)
             return float('nan')
         
+        return raw_adc_value
+        # print (raw_adc_value);
+
         pressure_psi_raw = (float(raw_adc_value) - b_coefficient) / m_coefficient
         
         # Store the raw value before taring

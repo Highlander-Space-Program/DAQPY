@@ -28,7 +28,7 @@ def parse_can_id_struct(can_id_int_32bit):
     board_id = (base_29bit_id & config.CAN_ID_BOARD_ID_MASK) >> config.CAN_ID_BOARD_ID_SHIFT
     component_type = (base_29bit_id & config.CAN_ID_COMPONENT_TYPE_MASK) >> config.CAN_ID_COMPONENT_TYPE_SHIFT
     instance = (base_29bit_id & config.CAN_ID_INSTANCE_MASK) >> config.CAN_ID_INSTANCE_SHIFT
-
+    # print (sender)
     return {
         "is_ack": is_ack,
         "original_29bit_id_with_ack": can_id_29bit_with_ack, # The raw 29-bit value including ACK bit
