@@ -1,1 +1,12 @@
-[]
+[
+    {
+        "AIN": "AIN12",
+        "SensorType": "Voltage",
+        "Differential": false
+    },
+    {
+        "AIN": "AIN2",
+        "SensorType": "Thermocouple",
+        "Differential": true
+    }
+]

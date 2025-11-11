@@ -1,6 +1,6 @@
 import json
 from typing import List, Optional
-
+from labjack import ljm
 class Sensor:
     def __init__(self, ain: str, sensor_type: str, differential: bool):
         self.ain = ain
@@ -10,13 +10,18 @@ class Sensor:
     def __repr__(self):
         return f"<Sensor {self.ain} | {self.sensor_type} | Differential: {self.differential}>"
 
-    def configure_labjack(self, lj):
+    def configure_labjack(self, ljm, handle):
         """
         Placeholder for future LabJack integration.
         You’ll eventually call LJ commands here, e.g.:
         lj.eWriteName(f"{self.ain}_ENABLE", 1)
         lj.eWriteName(f"{self.ain}_TYPE", self.sensor_type)
         """
+        ljm.eWriteName(handle, f"{self.ain}_ENABLE", 1)
+        ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 22)
+        ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 3)
+        ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
+        ljm.eWriteName(handle, f"{self.ain}_RESOLUTION_INDEX", 8)
         print(f"Configuring {self.ain} ({self.sensor_type}) on LabJack...")
 
 def load_sensors_from_json(path: Optional[str] = "labjack_channels.json") -> List[Sensor]:
