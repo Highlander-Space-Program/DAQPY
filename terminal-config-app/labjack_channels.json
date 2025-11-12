@@ -1,12 +1,12 @@
 [
     {
-        "AIN": "AIN12",
+        "AIN": "AIN2",
         "SensorType": "Voltage",
-        "Differential": false
+        "Differential": true
     },
     {
-        "AIN": "AIN2",
-        "SensorType": "Thermocouple",
+        "AIN": "AIN3",
+        "SensorType": "Voltage",
         "Differential": true
     }
 ]

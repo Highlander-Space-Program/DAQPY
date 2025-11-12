@@ -17,7 +17,6 @@ class Sensor:
         lj.eWriteName(f"{self.ain}_ENABLE", 1)
         lj.eWriteName(f"{self.ain}_TYPE", self.sensor_type)
         """
-        ljm.eWriteName(handle, f"{self.ain}_ENABLE", 1)
         ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 22)
         ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 3)
         ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
