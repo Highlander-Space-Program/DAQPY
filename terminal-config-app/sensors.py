@@ -1,6 +1,7 @@
 import json
 from typing import List, Optional
 from labjack import ljm
+
 class Sensor:
     def __init__(self, ain: str, sensor_type: str, differential: bool):
         self.ain = ain
@@ -12,26 +13,36 @@ class Sensor:
 
     def configure_labjack(self, ljm, handle):
         """
-        Placeholder for future LabJack integration.
-        You’ll eventually call LJ commands here, e.g.:
-        lj.eWriteName(f"{self.ain}_ENABLE", 1)
-        lj.eWriteName(f"{self.ain}_TYPE", self.sensor_type)
+        Configures the LabJack analog input channel.
+        Handles both differential and single-ended modes.
         """
-        ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 22)
-        ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 3)
-        ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
+        ain_number = int(self.ain.replace("AIN", ""))
+
+        # Set the negative channel for differential mode
+        if self.differential:
+            negative_channel = ain_number + 1  # AIN2-AIN3, AIN4-AIN5, etc.
+            ljm.eWriteName(handle, f"{self.ain}_NEGATIVE_CH", negative_channel)
+            print(f"Configuring {self.ain} as DIFFERENTIAL (AIN{ain_number}-AIN{negative_channel})...")
+        else:
+            # For single-ended, negative channel = 199 (GND reference)
+            ljm.eWriteName(handle, f"{self.ain}_NEGATIVE_CH", 199)
+            print(f"Configuring {self.ain} as SINGLE-ENDED (to GND)...")
+
+        # Common configuration for both types
+        ljm.eWriteName(handle, f"{self.ain}_RANGE", 10.0)  # ±10V range
         ljm.eWriteName(handle, f"{self.ain}_RESOLUTION_INDEX", 8)
-        print(f"Configuring {self.ain} ({self.sensor_type}) on LabJack...")
+        ljm.eWriteName(handle, f"{self.ain}_SETTLING_US", 0)
+
+    def read_value(self, ljm, handle):
+        """Reads and returns the current voltage from the channel."""
+        value = ljm.eReadName(handle, self.ain)
+        print(f"{self.ain}: {value:.6f} V")
+        return value
+
 
 def load_sensors_from_json(path: Optional[str] = "labjack_channels.json") -> List[Sensor]:
     """
     Load sensors from a JSON file and return a list of Sensor objects.
-
-    Args:
-        path (str): Path to the JSON configuration file. Defaults to 'labjack_channels.json'.
-
-    Returns:
-        List[Sensor]: List of Sensor objects parsed from the file.
     """
     try:
         with open(path, "r") as f:
@@ -47,7 +58,6 @@ def load_sensors_from_json(path: Optional[str] = "labjack_channels.json") -> Lis
     if isinstance(data, dict) and "Channels" in data:
         data = data["Channels"]
 
-    # Validate structure
     sensors = []
     for ch in data:
         try:

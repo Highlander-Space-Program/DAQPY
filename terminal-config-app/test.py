@@ -1,25 +1,16 @@
 from labjack import ljm
 from sensors import load_sensors_from_json
 
+# Open connection to LabJack
 handle = ljm.openS("T7", "USB", "ANY")
 
 info = ljm.getHandleInfo(handle)
 print(f"Opened LabJack (Type {info[0]}, Connection {info[1]}, Serial {info[2]})")
 
+# Load and configure sensors
 sensors = load_sensors_from_json("labjack_channels.json")
-
 for s in sensors:
-    print(s)
     s.configure_labjack(ljm, handle)
-
-print("\n\n\n\n\n")
-
-for i in range(16):  # AIN0–AIN15
-    ef_index = ljm.eReadName(handle, f"AIN{i}_EF_INDEX")
-    if ef_index != 0:
-        print(f"AIN{i} is using EF index {ef_index}")
-    else:
-        print(f"AIN{i} has no EF function configured")
-
+    s.read_value(ljm, handle)
 
 ljm.close(handle)

@@ -1,12 +1,8 @@
 [
     {
         "AIN": "AIN2",
-        "SensorType": "Voltage",
-        "Differential": true
-    },
-    {
-        "AIN": "AIN3",
-        "SensorType": "Voltage",
+        "NegativeAIN": "AIN3",
+        "SensorType": "LoadCell",
         "Differential": true
     }
 ]
