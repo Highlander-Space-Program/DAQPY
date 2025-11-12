@@ -1,0 +1,12 @@
+[
+    {
+        "AIN": "AIN3",
+        "SensorType": "Voltage",
+        "Differential": true
+    },
+    {
+        "AIN": "AIN13",
+        "SensorType": "Voltage",
+        "Differential": true
+    }
+]
