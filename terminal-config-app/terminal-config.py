@@ -10,8 +10,8 @@ def AINNumber(prompt, used_pins) -> int:
             print("Please enter a valid number")
             continue
 
-        if pin < 0 or pin > 15:
-            print("Pin is not in range (0–15)")
+        if pin < 0 or pin > 84:
+            print("Pin is not in range (0-84)")
         elif pin in used_pins:
             print(f"AIN{pin} is already configured. Please choose another.")
         else:
@@ -132,15 +132,15 @@ def main():
         print("  3. View all configured channels")
         print("  4. Save and exit")
 
-        choice = input("Select an option (1–4): ").strip()
+        choice = input("Select an option (1-4): ").strip()
 
         if choice == "1":
             diff = isDifferential()
 
             if diff:
-                ain_pos = AINNumber("Enter positive AIN (0–15): ", used_pins)
+                ain_pos = AINNumber("Enter positive AIN (0-84): ", used_pins)
                 used_pins.add(ain_pos)
-                ain_neg = AINNumber("Enter negative AIN (0–15): ", used_pins)
+                ain_neg = AINNumber("Enter negative AIN (0-84): ", used_pins)
                 used_pins.add(ain_neg)
                 sensor = Sensortype()
 
@@ -152,7 +152,7 @@ def main():
                 }
 
             else:
-                ain = AINNumber("Enter AIN (0–15): ", used_pins)
+                ain = AINNumber("Enter AIN (0-84): ", used_pins)
                 used_pins.add(ain)
                 sensor = Sensortype()
 
@@ -177,7 +177,7 @@ def main():
             break
 
         else:
-            print("Invalid option. Please select 1–4.")
+            print("Invalid option. Please select 1-4.")
 
     with open("labjack_channels.json", "w") as f:
         json.dump(channels, f, indent=4)

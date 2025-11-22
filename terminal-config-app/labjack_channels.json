@@ -1,7 +1,7 @@
 [
     {
-        "AIN": "AIN2",
-        "NegativeAIN": "AIN3",
+        "AIN": "AIN0",
+        "NegativeAIN": "AIN1",
         "SensorType": "LoadCell",
         "Differential": true
     }
