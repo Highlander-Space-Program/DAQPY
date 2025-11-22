@@ -10,7 +10,6 @@ class Sensor:
 
     def __repr__(self):
         return f"<Sensor {self.ain} | {self.sensor_type} | Differential: {self.differential}>"
-
     def configure_labjack(self, ljm, handle):
         """
         Configures the LabJack analog input channel.

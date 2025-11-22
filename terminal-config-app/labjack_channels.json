@@ -4,5 +4,10 @@
         "NegativeAIN": "AIN3",
         "SensorType": "LoadCell",
         "Differential": true
+    },
+    {
+        "AIN": "AIN4",
+        "SensorType": "LoadCell",
+        "Differential": false
     }
 ]
