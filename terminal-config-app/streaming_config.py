@@ -1,62 +1,41 @@
 import json
 import time
-from labjack import ljm  # Requires LabJack LJM driver and Python bindings installed
+from labjack import ljm
+
+from sensors import load_sensors_from_json, Sensor
 
 
-def load_channels(filename="labjack_channels.json"):
-    with open(filename, "r") as f:
-        data = json.load(f)
-    if isinstance(data, dict) and "Channels" in data:
-        data = data["Channels"]
-
-    if not isinstance(data, list):
-        raise ValueError("Expected a list of channels in JSON file.")
-
-    ain_channels = []
-    for ch in data:
-        if not isinstance(ch, dict):
-            continue
-        if ch.get("Type", "AIN") == "AIN" and "AIN" in ch:
-            ain_channels.append(ch)
-
-    if not ain_channels:
-        raise ValueError("No AIN channels found in configuration.")
-
-    return ain_channels
-
-
-
-def open_t7(connection_type="USB"):
+def open_t7(connection_type: str = "USB"):
     print(f"Opening T7 over {connection_type}...")
     handle = ljm.openS("T7", connection_type, "ANY")
     info = ljm.getHandleInfo(handle)
-    print(f"Opened T7: Device type: {info[0]}, Connection type: {info[1]}, "
-          f"Serial: {info[2]}, IP: {info[3]}")
+    print(
+        f"Opened T7: Device type: {info[0]}, "
+        f"Connection type: {info[1]}, Serial: {info[2]}, IP: {info[3]}"
+    )
     return handle
 
+def build_scan_list(sensors: list[Sensor]):
+    channel_names = [s.ain for s in sensors]
 
-
-def build_scan_list(ain_channels):
-    channel_names = [ch["AIN"] for ch in ain_channels] 
-
-    num_addrs, a_addresses, a_types = ljm.namesToAddresses(len(channel_names), channel_names)
+    a_addresses, a_types = ljm.namesToAddresses(len(channel_names), channel_names)
 
     print("\nScan list:")
     for name, addr in zip(channel_names, a_addresses):
         print(f"  {name} -> address {addr}")
 
-    return a_addresses, len(channel_names), channel_names
+    num_addrs = len(a_addresses)
+    return a_addresses, num_addrs, channel_names
 
 
 
 def configure_stream_params():
     scan_rate_hz = 1000.0
-    scans_per_read = 1000 
+    scans_per_read = 1000
     return scan_rate_hz, scans_per_read
 
 
-
-def format_influx_line(measurement, tags, fields, timestamp_ns):
+def format_influx_line(measurement: str, tags: dict, fields: dict, timestamp_ns: int):
     line = measurement
 
     if tags:
@@ -88,52 +67,64 @@ def format_influx_line(measurement, tags, fields, timestamp_ns):
     return line
 
 
-
-def run_stream(handle, scan_list, num_channels, channel_names, ain_channels):
+def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str]):
     scan_rate_hz, scans_per_read = configure_stream_params()
-    sensor_by_name = {ch["AIN"]: ch.get("SensorType") for ch in ain_channels}
-    diff_by_name = {ch["AIN"]: ch.get("Differential", False) for ch in ain_channels}
+    num_channels = len(channel_names)
 
-    print(f"\nStarting stream:")
+    sensor_type_by_name = {s.ain: s.sensor_type for s in sensors}
+    diff_by_name = {s.ain: s.differential for s in sensors}
+
+    print("\nStarting stream:")
     print(f"  Scan rate:      {scan_rate_hz} Hz")
     print(f"  Channels:       {channel_names}")
     print(f"  Scans per read: {scans_per_read}")
 
-    actual_scan_rate = ljm.eStreamStart(handle,
-                                        scans_per_read,
-                                        num_channels,
-                                        scan_list,
-                                        scan_rate_hz)
+    actual_scan_rate = ljm.eStreamStart(
+        handle,
+        scans_per_read,
+        num_channels,
+        scan_list,
+        scan_rate_hz,
+    )
 
     print(f"Actual stream scan rate: {actual_scan_rate} Hz")
     print("\nStreaming... press Ctrl+C to stop.\n")
 
     try:
         while True:
-            scans, data, device_backlog, ljm_backlog = ljm.eStreamRead(handle)
-            # For each scan:
+            # eStreamRead returns (data, device_backlog, ljm_backlog) in Python
+            data, device_backlog, ljm_backlog = ljm.eStreamRead(handle)
+
+            # How many scans did we just get?
+            scans = len(data) // num_channels
+
             for scan_idx in range(scans):
                 base = scan_idx * num_channels
                 ts_ns = int(time.time() * 1e9)
+
                 for ch_idx, name in enumerate(channel_names):
                     value = data[base + ch_idx]
 
                     tags = {
                         "device": "T7",
                         "channel": name,
-                        "sensor": sensor_by_name.get(name),
-                        "differential": str(bool(diff_by_name.get(name, False))).lower()
+                        "sensor": sensor_type_by_name.get(name),
+                        "differential": str(bool(diff_by_name.get(name, False))).lower(),
                     }
 
                     fields = {
-                        "voltage": value
+                        "voltage": value,
                     }
 
                     line = format_influx_line("labjack", tags, fields, ts_ns)
                     if line is not None:
                         print(line)
+
             if scans > 0:
-                print(f"# scans: {scans}, deviceBacklog: {device_backlog}, LJMBacklog: {ljm_backlog}")
+                print(
+                    f"# scans: {scans}, deviceBacklog: {device_backlog}, "
+                    f"LJMBacklog: {ljm_backlog}"
+                )
 
     except KeyboardInterrupt:
         print("\nStopping stream (Ctrl+C detected)...")
@@ -144,17 +135,22 @@ def run_stream(handle, scan_list, num_channels, channel_names, ain_channels):
         print("Stream stopped and device closed.")
 
 
+
 def main():
-    ain_channels = load_channels("labjack_channels.json")
+    sensors = load_sensors_from_json("labjack_channels.json")
+    if not sensors:
+        print("No sensors found in JSON config. Exiting.")
+        return
 
-    handle = open_t7("USB")  # You can change to "ANY", "ETHERNET", etc.
+    handle = open_t7("USB")
 
-    scan_list, num_channels, channel_names = build_scan_list(ain_channels)
+    for s in sensors:
+        s.configure_labjack(ljm, handle)
 
-    run_stream(handle, scan_list, num_channels, channel_names, ain_channels)
+    scan_list, num_channels, channel_names = build_scan_list(sensors)
+
+    run_stream(handle, scan_list, sensors, channel_names)
 
 
 if __name__ == "__main__":
     main()
-
-#labjack gives a format when reading data and we have to match it to the Influx db line protocol format
