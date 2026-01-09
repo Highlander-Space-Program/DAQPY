@@ -1,5 +1,6 @@
 import json
 import time
+import csv
 from labjack import ljm
 
 from sensors import load_sensors_from_json, Sensor
@@ -67,7 +68,7 @@ def format_influx_line(measurement: str, tags: dict, fields: dict, timestamp_ns:
     return line
 
 
-def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str]):
+def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str], csv_writer):
     scan_rate_hz, scans_per_read = configure_stream_params()
     num_channels = len(channel_names)
 
@@ -120,6 +121,15 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
                     if line is not None:
                         print(line)
 
+                    csv_writer.writerow([
+                    ts_ns,
+                    tags["device"],
+                    name,
+                    tags["sensor"],
+                    tags["differential"],
+                    value,
+                    ])
+
             if scans > 0:
                 print(
                     f"# scans: {scans}, deviceBacklog: {device_backlog}, "
@@ -149,7 +159,22 @@ def main():
 
     scan_list, num_channels, channel_names = build_scan_list(sensors)
 
-    run_stream(handle, scan_list, sensors, channel_names)
+    csv_filename = "labjack_stream.csv"
+    print(f"Logging data to {csv_filename}")
+
+    with open(csv_filename, mode="w", newline="", encoding="utf-8") as f:
+        csv_writer = csv.writer(f)
+
+        csv_writer.writerow([
+            "timestamp_ns",
+            "device",
+            "channel",
+            "sensor_type",
+            "differential",
+            "voltage",
+        ])
+
+        run_stream(handle, scan_list, sensors, channel_names, csv_writer)
 
 
 if __name__ == "__main__":
