@@ -184,7 +184,7 @@ def map_cb37_to_actual_ain(bank, cb37_idx):
     For X3/X4/X5 use BANK_BASE.
     """
     if bank == "X2":
-        # as per your instruction: only AIN0..AIN3 are allowed on X2
+        #only AIN0..AIN3 are allowed on X2
         if 0 <= cb37_idx <= 3:
             return cb37_idx
         return None

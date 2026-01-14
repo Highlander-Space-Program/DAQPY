@@ -1,5 +1,7 @@
 import json
 import time
+import csv
+from datetime import datetime
 from labjack import ljm
 
 from sensors import load_sensors_from_json, Sensor
@@ -15,18 +17,16 @@ def open_t7(connection_type: str = "USB"):
     )
     return handle
 
+
 def build_scan_list(sensors: list[Sensor]):
     channel_names = [s.ain for s in sensors]
-
-    a_addresses, a_types = ljm.namesToAddresses(len(channel_names), channel_names)
+    a_addresses, _ = ljm.namesToAddresses(len(channel_names), channel_names)
 
     print("\nScan list:")
     for name, addr in zip(channel_names, a_addresses):
         print(f"  {name} -> address {addr}")
 
-    num_addrs = len(a_addresses)
-    return a_addresses, num_addrs, channel_names
-
+    return a_addresses, len(a_addresses), channel_names
 
 
 def configure_stream_params():
@@ -35,44 +35,11 @@ def configure_stream_params():
     return scan_rate_hz, scans_per_read
 
 
-def format_influx_line(measurement: str, tags: dict, fields: dict, timestamp_ns: int):
-    line = measurement
-
-    if tags:
-        tag_parts = []
-        for k, v in tags.items():
-            if v is None:
-                continue
-            tag_parts.append(f"{k}={v}")
-        if tag_parts:
-            line += "," + ",".join(tag_parts)
-
-    field_parts = []
-    for k, v in fields.items():
-        if isinstance(v, bool):
-            v_str = "true" if v else "false"
-        elif isinstance(v, (int, float)):
-            v_str = f"{v}"
-        else:
-            v_str = f"\"{v}\""
-        field_parts.append(f"{k}={v_str}")
-
-    if not field_parts:
-        return None
-
-    line += " " + ",".join(field_parts)
-
-    line += f" {timestamp_ns}"
-
-    return line
-
-
 def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str]):
     scan_rate_hz, scans_per_read = configure_stream_params()
     num_channels = len(channel_names)
 
     sensor_type_by_name = {s.ain: s.sensor_type for s in sensors}
-    diff_by_name = {s.ain: s.differential for s in sensors}
 
     print("\nStarting stream:")
     print(f"  Scan rate:      {scan_rate_hz} Hz")
@@ -90,35 +57,37 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
     print(f"Actual stream scan rate: {actual_scan_rate} Hz")
     print("\nStreaming... press Ctrl+C to stop.\n")
 
+    csvfile = open("data.csv", "w", newline="")
+    writer = csv.DictWriter(csvfile, fieldnames=[
+        "device",
+        "ain",
+        "sensor",
+        "voltage",
+        "measurement",
+        "timestamp"
+    ])
+    writer.writeheader()
+
     try:
         while True:
-            # eStreamRead returns (data, device_backlog, ljm_backlog) in Python
             data, device_backlog, ljm_backlog = ljm.eStreamRead(handle)
-
-            # How many scans did we just get?
             scans = len(data) // num_channels
 
             for scan_idx in range(scans):
                 base = scan_idx * num_channels
-                ts_ns = int(time.time() * 1e9)
+                timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")[:-3]
 
-                for ch_idx, name in enumerate(channel_names):
+                for ch_idx, ain_name in enumerate(channel_names):
                     value = data[base + ch_idx]
 
-                    tags = {
+                    writer.writerow({
                         "device": "T7",
-                        "channel": name,
-                        "sensor": sensor_type_by_name.get(name),
-                        "differential": str(bool(diff_by_name.get(name, False))).lower(),
-                    }
-
-                    fields = {
+                        "ain": ain_name,
+                        "sensor": sensor_type_by_name.get(ain_name),
                         "voltage": value,
-                    }
-
-                    line = format_influx_line("labjack", tags, fields, ts_ns)
-                    if line is not None:
-                        print(line)
+                        "measurement": "sensor_data",
+                        "timestamp": timestamp
+                    })
 
             if scans > 0:
                 print(
@@ -130,10 +99,10 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
         print("\nStopping stream (Ctrl+C detected)...")
 
     finally:
+        csvfile.close()
         ljm.eStreamStop(handle)
         ljm.close(handle)
         print("Stream stopped and device closed.")
-
 
 
 def main():
