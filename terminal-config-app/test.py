@@ -35,10 +35,8 @@ while(True):
                 print("----------------")
                 for s in sensors:
                     s.configure_labjack(ljm, handle)
-                    voltage = ljm.eReadName(handle, s.ain)
+                    temperature = ljm.eReadName(handle, f"{s.ain}_EF_READ_A")
                     print(f"Thermocouple Temperature: {temperature:.2f}°C")
-                    tc_temp_f = thermocouple_voltage_to_temperature(voltage, 25)
-                    print(f"TC Voltage: {voltage}, Temperature: {tc_temp_f:.2f}°F")
                 time.sleep(1)
         except KeyboardInterrupt:
             pass
