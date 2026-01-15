@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clementine DAQ Dashboard | Highlander Space Program</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+</head>
+<body>
+    <!-- Top Bar -->
+    <header class="top-bar">
+        <div class="brand">
+            <div class="brand-logo">
+                <svg viewBox="0 0 40 40" class="logo-icon">
+                    <circle cx="20" cy="20" r="16" fill="none" stroke="currentColor" stroke-width="2"/>
+                    <path d="M20 8 L20 32 M12 16 L20 8 L28 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <span class="team-name">Highlander Space Program</span>
+                <span class="divider">|</span>
+                <span class="rocket-name">Clementine</span>
+            </div>
+        </div>
+        <div class="status-indicators">
+            <div class="connection-status" id="connection-status">
+                <span class="status-dot" id="ws-status-dot"></span>
+                <span class="status-text" id="ws-status-text">Connecting...</span>
+            </div>
+            <div class="board-summary" id="board-summary">
+                <span class="board-count" title="Sensor Boards"><span id="sensor-board-count">0</span>/3 SB</span>
+                <span class="board-count" title="Control Boards"><span id="control-board-count">0</span>/3 CB</span>
+            </div>
+            <div class="system-state-pill" id="system-state-pill">
+                <span class="state-text">SAFE</span>
+            </div>
+        </div>
+    </header>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <nav class="sidebar">
+            <ul class="nav-list">
+                <li class="nav-item active" data-page="overview">
+                    <svg viewBox="0 0 24 24" class="nav-icon">
+                        <rect x="3" y="3" width="7" height="7" rx="1"/>
+                        <rect x="14" y="3" width="7" height="7" rx="1"/>
+                        <rect x="3" y="14" width="7" height="7" rx="1"/>
+                        <rect x="14" y="14" width="7" height="7" rx="1"/>
+                    </svg>
+                    <span>Overview</span>
+                </li>
+                <li class="nav-item" data-page="telemetry">
+                    <svg viewBox="0 0 24 24" class="nav-icon">
+                        <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" fill="none" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>Telemetry</span>
+                </li>
+                <li class="nav-item" data-page="controls">
+                    <svg viewBox="0 0 24 24" class="nav-icon">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" fill="none" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>Controls</span>
+                    <span class="nav-badge locked" id="controls-lock-badge">🔒</span>
+                </li>
+                <li class="nav-item" data-page="tvc">
+                    <svg viewBox="0 0 24 24" class="nav-icon">
+                        <path d="M12 2L8 10h8L12 2z" fill="currentColor"/>
+                        <rect x="10" y="10" width="4" height="10" fill="currentColor"/>
+                        <path d="M8 20l4 2 4-2" fill="none" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>TVC</span>
+                </li>
+                <li class="nav-item" data-page="debug">
+                    <svg viewBox="0 0 24 24" class="nav-icon">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" fill="currentColor"/>
+                    </svg>
+                    <span>Debug</span>
+                </li>
+                <li class="nav-item" data-page="logs">
+                    <svg viewBox="0 0 24 24" class="nav-icon">
+                        <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <polyline points="14 2 14 8 20 8" fill="none" stroke="currentColor" stroke-width="2"/>
+                        <line x1="8" y1="13" x2="16" y2="13" stroke="currentColor" stroke-width="2"/>
+                        <line x1="8" y1="17" x2="16" y2="17" stroke="currentColor" stroke-width="2"/>
+                    </svg>
+                    <span>Logs</span>
+                </li>
+            </ul>
+            
+            <div class="sidebar-footer">
+                <div class="uptime" id="uptime-display">Uptime: --</div>
+                <div class="pps" id="pps-display">-- pkt/s</div>
+            </div>
+        </nav>
+
+        <!-- Main Content Area -->
+        <main class="main-content">
+            <!-- Alarm Banner -->
+            <div class="alarm-banner" id="alarm-banner" style="display: none;">
+                <div class="alarm-banner-content">
+                    <span class="alarm-icon">⚠</span>
+                    <span class="alarm-message" id="alarm-banner-message"></span>
+                    <button class="alarm-ack-btn" id="alarm-ack-btn">Acknowledge</button>
+                </div>
+            </div>
+
+            <!-- Overview Page -->
+            <section class="page active" id="page-overview">
+                <div class="page-header">
+                    <h1>System Overview</h1>
+                    <div class="time-display" id="time-display"></div>
+                </div>
+
+                <!-- Board Status Strip -->
+                <div class="board-status-strip" id="board-status-strip">
+                    <!-- Populated by JS -->
+                </div>
+
+                <div class="overview-grid">
+                    <div class="metrics-row">
+                        <div class="metric-card" id="metric-pc">
+                            <div class="metric-label">Chamber Pressure</div>
+                            <div class="metric-value"><span id="val-pc">--</span> <span class="metric-unit">psi</span></div>
+                            <canvas id="spark-pc" class="sparkline"></canvas>
+                            <div class="metric-source">sensor_board_1 / pt_1</div>
+                        </div>
+                        <div class="metric-card" id="metric-thrust">
+                            <div class="metric-label">Thrust</div>
+                            <div class="metric-value"><span id="val-thrust">--</span> <span class="metric-unit">lbf</span></div>
+                            <canvas id="spark-thrust" class="sparkline"></canvas>
+                            <div class="metric-source">sensor_board_2 / lc_1</div>
+                        </div>
+                        <div class="metric-card altitude-card" id="metric-altitude">
+                            <div class="metric-label">Altitude</div>
+                            <div class="metric-value"><span id="val-altitude">--</span> <span class="metric-unit">m</span></div>
+                            <div class="altitude-gauge">
+                                <div class="gauge-fill" id="altitude-gauge-fill"></div>
+                            </div>
+                            <div class="metric-source">sensor_board_3 / altitude</div>
+                        </div>
+                        <div class="metric-card" id="metric-temps">
+                            <div class="metric-label">Temperatures</div>
+                            <div class="temp-values">
+                                <div><span class="temp-label">LOX</span> <span id="val-tc1">--</span>°C</div>
+                                <div><span class="temp-label">Chamber</span> <span id="val-tc2">--</span>°C</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="charts-grid overview-charts">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Chamber Pressure (Pc)</h3>
+                                <span class="chart-value" id="chart-val-pc">-- psi</span>
+                            </div>
+                            <canvas id="chart-pc"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Thrust</h3>
+                                <span class="chart-value" id="chart-val-thrust">-- lbf</span>
+                            </div>
+                            <canvas id="chart-thrust"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>LOX Flow Rate</h3>
+                                <span class="chart-value" id="chart-val-flow">-- kg/s</span>
+                            </div>
+                            <canvas id="chart-flow"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Altitude</h3>
+                                <span class="chart-value" id="chart-val-altitude">-- m</span>
+                            </div>
+                            <canvas id="chart-altitude"></canvas>
+                        </div>
+                    </div>
+
+                    <div class="alarm-panel">
+                        <div class="panel-header">
+                            <h3>Active Alarms</h3>
+                            <span class="alarm-count" id="alarm-count">0</span>
+                        </div>
+                        <div class="alarm-list" id="alarm-list">
+                            <div class="no-alarms">No active alarms</div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Telemetry Page -->
+            <section class="page" id="page-telemetry">
+                <div class="page-header">
+                    <h1>Telemetry</h1>
+                    <div class="time-controls">
+                        <span>Time Window:</span>
+                        <button class="time-btn active" data-window="10">10s</button>
+                        <button class="time-btn" data-window="30">30s</button>
+                        <button class="time-btn" data-window="120">2m</button>
+                    </div>
+                </div>
+
+                <div class="telemetry-grid">
+                    <div class="chart-container full-chart">
+                        <div class="chart-header">
+                            <h3>Chamber Pressure (Pc) — pt_1</h3>
+                            <div class="chart-meta">
+                                <span class="chart-value" id="telem-val-pc">-- psi</span>
+                                <span class="chart-range">Range: 0-1000 psi</span>
+                            </div>
+                        </div>
+                        <canvas id="telem-chart-pc"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>LOX Line Pressure — pt_2</h3>
+                            <span class="chart-value" id="telem-val-lox">-- psi</span>
+                        </div>
+                        <canvas id="telem-chart-lox"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Fuel Line Pressure — pt_3</h3>
+                            <span class="chart-value" id="telem-val-fuel">-- psi</span>
+                        </div>
+                        <canvas id="telem-chart-fuel"></canvas>
+                    </div>
+                    <div class="chart-container full-chart">
+                        <div class="chart-header">
+                            <h3>Thrust — lc_1</h3>
+                            <div class="chart-meta">
+                                <span class="chart-value" id="telem-val-thrust">-- lbf</span>
+                                <span class="chart-range">Range: 0-30000 lbf</span>
+                            </div>
+                        </div>
+                        <canvas id="telem-chart-thrust"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>LOX Flow Rate — flow_1</h3>
+                            <span class="chart-value" id="telem-val-flow">-- kg/s</span>
+                        </div>
+                        <canvas id="telem-chart-flow"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Tank Weight — lc_2</h3>
+                            <span class="chart-value" id="telem-val-weight">-- lbf</span>
+                        </div>
+                        <canvas id="telem-chart-weight"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Angular Rate — imu_gyro</h3>
+                            <span class="chart-value" id="telem-val-gyro">-- °/s</span>
+                        </div>
+                        <canvas id="telem-chart-gyro"></canvas>
+                    </div>
+                    <div class="chart-container">
+                        <div class="chart-header">
+                            <h3>Altitude</h3>
+                            <span class="chart-value" id="telem-val-altitude">-- m</span>
+                        </div>
+                        <canvas id="telem-chart-altitude"></canvas>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Controls Page (Protected) -->
+            <section class="page" id="page-controls">
+                <!-- PIN Entry Overlay -->
+                <div class="controls-lock-overlay" id="controls-lock-overlay">
+                    <div class="lock-modal">
+                        <div class="lock-icon">🔒</div>
+                        <h2>Controls Locked</h2>
+                        <p>Enter PIN to access actuation controls</p>
+                        <div class="pin-input-group">
+                            <input type="password" id="pin-input" maxlength="8" placeholder="Enter PIN" autocomplete="off">
+                            <button class="unlock-btn" id="unlock-btn">Unlock</button>
+                        </div>
+                        <div class="pin-error" id="pin-error"></div>
+                        <p class="lock-warning">⚠ Actuation controls affect real hardware. Authorized personnel only.</p>
+                    </div>
+                </div>
+
+                <!-- Controls Content (hidden until unlocked) -->
+                <div class="controls-content" id="controls-content" style="display: none;">
+                    <div class="page-header">
+                        <h1>Controls</h1>
+                        <div class="controls-header-actions">
+                            <div class="arm-status" id="arm-status">
+                                <span class="arm-indicator disarmed"></span>
+                                <span>DISARMED</span>
+                            </div>
+                            <button class="lock-controls-btn" id="lock-controls-btn">🔒 Lock Controls</button>
+                        </div>
+                    </div>
+
+                    <div class="controls-grid">
+                        <!-- Arm Section -->
+                        <div class="control-section arm-section">
+                            <h3>System Arm</h3>
+                            <p class="control-description">Arm to enable solenoid and valve actuation.</p>
+                            <div class="arm-toggle-container">
+                                <button class="arm-toggle" id="arm-toggle">
+                                    <span class="toggle-label">ARM CONTROLS</span>
+                                </button>
+                            </div>
+                            <div class="control-feedback" id="arm-feedback"></div>
+                        </div>
+
+                        <!-- Solenoids -->
+                        <div class="control-section actuator-section">
+                            <h3>Solenoids (control_board_1)</h3>
+                            <div class="actuator-grid">
+                                <div class="actuator-control" data-actuator="solenoid_1">
+                                    <span class="actuator-name">Solenoid 1</span>
+                                    <span class="actuator-state" id="state-solenoid_1">closed</span>
+                                    <div class="actuator-buttons">
+                                        <button class="act-btn open-btn" data-state="open">Open</button>
+                                        <button class="act-btn close-btn" data-state="closed">Close</button>
+                                    </div>
+                                </div>
+                                <div class="actuator-control" data-actuator="solenoid_2">
+                                    <span class="actuator-name">Solenoid 2</span>
+                                    <span class="actuator-state" id="state-solenoid_2">closed</span>
+                                    <div class="actuator-buttons">
+                                        <button class="act-btn open-btn" data-state="open">Open</button>
+                                        <button class="act-btn close-btn" data-state="closed">Close</button>
+                                    </div>
+                                </div>
+                                <div class="actuator-control" data-actuator="solenoid_3">
+                                    <span class="actuator-name">Solenoid 3</span>
+                                    <span class="actuator-state" id="state-solenoid_3">closed</span>
+                                    <div class="actuator-buttons">
+                                        <button class="act-btn open-btn" data-state="open">Open</button>
+                                        <button class="act-btn close-btn" data-state="closed">Close</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Main Valves -->
+                        <div class="control-section actuator-section critical-section">
+                            <h3>Main Valves (control_board_2)</h3>
+                            <div class="actuator-grid">
+                                <div class="actuator-control critical" data-actuator="valve_main_lox">
+                                    <span class="actuator-name">Main LOX Valve</span>
+                                    <span class="actuator-state" id="state-valve_main_lox">closed</span>
+                                    <div class="actuator-buttons">
+                                        <button class="act-btn open-btn critical-btn" data-state="open">Open</button>
+                                        <button class="act-btn close-btn" data-state="closed">Close</button>
+                                    </div>
+                                </div>
+                                <div class="actuator-control critical" data-actuator="valve_main_fuel">
+                                    <span class="actuator-name">Main Fuel Valve</span>
+                                    <span class="actuator-state" id="state-valve_main_fuel">closed</span>
+                                    <div class="actuator-buttons">
+                                        <button class="act-btn open-btn critical-btn" data-state="open">Open</button>
+                                        <button class="act-btn close-btn" data-state="closed">Close</button>
+                                    </div>
+                                </div>
+                                <div class="actuator-control critical" data-actuator="igniter">
+                                    <span class="actuator-name">Igniter</span>
+                                    <span class="actuator-state" id="state-igniter">off</span>
+                                    <div class="actuator-buttons">
+                                        <button class="act-btn open-btn critical-btn" data-state="on">Fire</button>
+                                        <button class="act-btn close-btn" data-state="off">Off</button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- TVC Servos -->
+                        <div class="control-section servo-section">
+                            <h3>TVC Servos (control_board_3)</h3>
+                            <div class="servo-control">
+                                <label>TVC Pitch</label>
+                                <div class="slider-container">
+                                    <input type="range" id="servo-pitch" min="-15" max="15" value="0" step="0.5">
+                                    <span class="slider-value" id="servo-pitch-val">0.0°</span>
+                                </div>
+                            </div>
+                            <div class="servo-control">
+                                <label>TVC Yaw</label>
+                                <div class="slider-container">
+                                    <input type="range" id="servo-yaw" min="-15" max="15" value="0" step="0.5">
+                                    <span class="slider-value" id="servo-yaw-val">0.0°</span>
+                                </div>
+                            </div>
+                            <div class="servo-buttons">
+                                <button class="control-btn center-btn" id="btn-center">Center</button>
+                            </div>
+                        </div>
+
+                        <!-- E-STOP -->
+                        <div class="control-section estop-section">
+                            <h3>Emergency Stop</h3>
+                            <button class="estop-btn" id="btn-estop">
+                                <span class="estop-icon">⊘</span>
+                                <span>E-STOP</span>
+                            </button>
+                        </div>
+
+                        <!-- Command Log -->
+                        <div class="control-section command-log-section">
+                            <h3>Recent Commands</h3>
+                            <div class="command-log" id="command-log">
+                                <div class="no-commands">No commands yet</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TVC Page -->
+            <section class="page" id="page-tvc">
+                <div class="page-header">
+                    <h1>TVC & Attitude</h1>
+                </div>
+
+                <div class="tvc-grid">
+                    <div class="tvc-viz-container">
+                        <h3>Attitude Visualization</h3>
+                        <div class="rocket-viz" id="rocket-viz">
+                            <div class="rocket-model" id="rocket-model">
+                                <div class="rocket-nose"></div>
+                                <div class="rocket-body">
+                                    <div class="rocket-stripe"></div>
+                                    <div class="rocket-window"></div>
+                                </div>
+                                <div class="rocket-fins">
+                                    <div class="fin fin-left"></div>
+                                    <div class="fin fin-right"></div>
+                                    <div class="fin fin-back"></div>
+                                </div>
+                                <div class="rocket-engine"></div>
+                                <div class="rocket-flame" id="rocket-flame"></div>
+                            </div>
+                            <div class="horizon-line"></div>
+                        </div>
+                        <div class="viz-labels">
+                            <span class="viz-axis">Gyro: <span id="viz-gyro">0.0</span>°/s</span>
+                            <span class="viz-axis">Acc: <span id="viz-acc">0.0</span>g</span>
+                        </div>
+                    </div>
+
+                    <div class="tvc-data-panel">
+                        <div class="data-section">
+                            <h3>IMU Data</h3>
+                            <div class="data-row">
+                                <span class="data-label">Angular Rate</span>
+                                <span class="data-value" id="tvc-gyro">--</span>
+                                <span class="data-unit">°/s</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">Acceleration</span>
+                                <span class="data-value" id="tvc-acc">--</span>
+                                <span class="data-unit">g</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">Altitude</span>
+                                <span class="data-value" id="tvc-altitude">--</span>
+                                <span class="data-unit">m</span>
+                            </div>
+                        </div>
+
+                        <div class="data-section">
+                            <h3>TVC Servo Position</h3>
+                            <div class="data-row">
+                                <span class="data-label">Pitch Servo</span>
+                                <span class="data-value" id="tvc-servo-pitch">0.0</span>
+                                <span class="data-unit">°</span>
+                            </div>
+                            <div class="data-row">
+                                <span class="data-label">Yaw Servo</span>
+                                <span class="data-value" id="tvc-servo-yaw">0.0</span>
+                                <span class="data-unit">°</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="tvc-charts">
+                        <div class="chart-container">
+                            <div class="chart-header">
+                                <h3>Angular Rate & Acceleration</h3>
+                            </div>
+                            <canvas id="tvc-chart-rates"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Debug Page -->
+            <section class="page" id="page-debug">
+                <div class="page-header">
+                    <h1>Debug Console</h1>
+                    <div class="debug-actions">
+                        <button class="debug-btn" id="btn-refresh-debug">Refresh</button>
+                    </div>
+                </div>
+
+                <div class="debug-grid">
+                    <!-- Board Connections -->
+                    <div class="debug-section board-connections">
+                        <h3>TCP Board Connections</h3>
+                        <div class="board-list" id="debug-board-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- System Metrics -->
+                    <div class="debug-section metrics-panel">
+                        <h3>System Metrics</h3>
+                        <div class="metric-grid">
+                            <div class="debug-metric">
+                                <span class="metric-name">WebSocket Clients</span>
+                                <span class="metric-val" id="debug-ws-clients">0</span>
+                            </div>
+                            <div class="debug-metric">
+                                <span class="metric-name">Packets/sec</span>
+                                <span class="metric-val" id="debug-pps">0</span>
+                            </div>
+                            <div class="debug-metric">
+                                <span class="metric-name">InfluxDB Queue</span>
+                                <span class="metric-val" id="debug-influx-queue">0</span>
+                            </div>
+                            <div class="debug-metric">
+                                <span class="metric-name">Uptime</span>
+                                <span class="metric-val" id="debug-uptime">0s</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Latency Monitor -->
+                    <div class="debug-section latency-panel">
+                        <h3>Latency Monitor</h3>
+                        <div class="latency-chart-container">
+                            <canvas id="latency-chart"></canvas>
+                        </div>
+                    </div>
+
+                    <!-- Raw Packet Inspector -->
+                    <div class="debug-section packet-inspector">
+                        <h3>Raw Packet Inspector</h3>
+                        <div class="packet-controls">
+                            <label>
+                                <input type="checkbox" id="packet-auto-scroll" checked> Auto-scroll
+                            </label>
+                            <label>
+                                <input type="checkbox" id="packet-show-rx" checked> RX
+                            </label>
+                            <label>
+                                <input type="checkbox" id="packet-show-tx" checked> TX
+                            </label>
+                            <button class="packet-btn" id="btn-clear-packets">Clear</button>
+                        </div>
+                        <div class="packet-list" id="packet-list">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Command History -->
+                    <div class="debug-section command-history">
+                        <h3>Command History</h3>
+                        <div class="command-history-list" id="debug-command-history">
+                            <!-- Populated by JS -->
+                        </div>
+                    </div>
+
+                    <!-- Data Flow Diagram -->
+                    <div class="debug-section data-flow">
+                        <h3>Data Flow</h3>
+                        <div class="flow-diagram">
+                            <div class="flow-node sensor">
+                                <div class="node-label">Sensor Boards</div>
+                                <div class="node-status" id="flow-sensor-status">TCP</div>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-node backend">
+                                <div class="node-label">Backend</div>
+                                <div class="node-status">Processing</div>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-node dashboard">
+                                <div class="node-label">Dashboard</div>
+                                <div class="node-status" id="flow-ws-status">WebSocket</div>
+                            </div>
+                        </div>
+                        <div class="flow-diagram">
+                            <div class="flow-node dashboard">
+                                <div class="node-label">Dashboard</div>
+                                <div class="node-status">HTTP POST</div>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-node backend">
+                                <div class="node-label">Backend</div>
+                                <div class="node-status">Validate</div>
+                            </div>
+                            <div class="flow-arrow">→</div>
+                            <div class="flow-node control">
+                                <div class="node-label">Control Boards</div>
+                                <div class="node-status" id="flow-control-status">TCP</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Logs Page -->
+            <section class="page" id="page-logs">
+                <div class="page-header">
+                    <h1>System Logs</h1>
+                    <div class="log-controls">
+                        <select id="log-filter">
+                            <option value="">All Logs</option>
+                            <option value="command">Commands</option>
+                            <option value="alarm">Alarms</option>
+                            <option value="system">System</option>
+                        </select>
+                        <button class="download-btn" id="btn-download-logs">
+                            <svg viewBox="0 0 24 24" class="btn-icon">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4M7 10l5 5 5-5M12 15V3" fill="none" stroke="currentColor" stroke-width="2"/>
+                            </svg>
+                            Download
+                        </button>
+                    </div>
+                </div>
+
+                <div class="logs-container">
+                    <table class="logs-table">
+                        <thead>
+                            <tr>
+                                <th>Timestamp</th>
+                                <th>Type</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logs-tbody">
+                            <tr><td colspan="3" class="no-logs">No logs available</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modals -->
+    <div class="modal-overlay" id="arm-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header"><h2>Confirm Arm</h2></div>
+            <div class="modal-body">
+                <p>You are about to ARM the control system.</p>
+                <p class="warning-text">⚠ Ensure all personnel are clear of the test stand.</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="arm-cancel">Cancel</button>
+                <button class="modal-btn confirm-btn" id="arm-confirm">Confirm ARM</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="estop-modal" style="display: none;">
+        <div class="modal estop-modal">
+            <div class="modal-header"><h2>⚠ Emergency Stop</h2></div>
+            <div class="modal-body">
+                <p>Activate Emergency Stop?</p>
+                <ul>
+                    <li>DISARM system</li>
+                    <li>Close all valves</li>
+                    <li>Center TVC servos</li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="estop-cancel">Cancel</button>
+                <button class="modal-btn estop-confirm-btn" id="estop-confirm">ACTIVATE E-STOP</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-overlay" id="actuate-confirm-modal" style="display: none;">
+        <div class="modal">
+            <div class="modal-header"><h2>Confirm Actuation</h2></div>
+            <div class="modal-body">
+                <p id="actuate-confirm-message">Set actuator to state?</p>
+            </div>
+            <div class="modal-footer">
+                <button class="modal-btn cancel-btn" id="actuate-cancel">Cancel</button>
+                <button class="modal-btn confirm-btn" id="actuate-confirm">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+</body>
+</html>

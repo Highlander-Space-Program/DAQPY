@@ -35,8 +35,13 @@ while(True):
                 print("----------------")
                 for s in sensors:
                     s.configure_labjack(ljm, handle)
-                    temperature = ljm.eReadName(handle, f"{s.ain}_EF_READ_A")
-                    print(f"Thermocouple Temperature: {temperature:.2f}°C")
+                    if(s.sensor_type == "Thermocouple"):
+                        temperature = ljm.eReadName(handle, f"{s.ain}_EF_READ_A")
+                        print(f"Thermocouple Temperature: {temperature:.2f}°C")
+                    elif(s.sensor_type == "LoadCell"):
+                        temperature = ljm.eReadName(handle, f"{s.ain}_EF_READ_A")
+                        print(f"LoadCell Temperature: {temperature:.2f}°C")
+                        lbs = ljm.eReadName
                 time.sleep(1)
         except KeyboardInterrupt:
             pass
