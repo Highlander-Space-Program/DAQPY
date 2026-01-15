@@ -63,7 +63,7 @@ class Sensor:
         # Common settings
         ljm.eWriteName(handle, f"{self.ain}_RANGE", 10.0)  # ±10V
         ljm.eWriteName(handle, f"{self.ain}_RESOLUTION_INDEX", 8)
-        ljm.eWriteName(handle, f"{self.ain}_SETTLING_US", 0)
+        ljm.eWriteName(handle, f"{self.ain}_SETTLING_US", 10)
 
     def read_value(self, ljm, handle):
         value = ljm.eReadName(handle, self.ain)

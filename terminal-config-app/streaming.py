@@ -6,7 +6,6 @@ from labjack import ljm
 
 from sensors import load_sensors_from_json, Sensor
 
-
 def open_t7(connection_type: str = "USB"):
     print(f"Opening T7 over {connection_type}...")
     handle = ljm.openS("T7", connection_type, "ANY")
@@ -30,8 +29,8 @@ def build_scan_list(sensors: list[Sensor]):
 
 
 def configure_stream_params():
-    scan_rate_hz = 1000
-    scans_per_read = 1000
+    scan_rate_hz = 200
+    scans_per_read = 200
     return scan_rate_hz, scans_per_read
 
 
@@ -89,6 +88,11 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
                         "timestamp": timestamp
                     })
 
+                    if sensor_type_by_name.get(ain_name) == "Thermocouple":
+                        tc_temp_f = thermocouple_voltage_to_temperature(value, 25)
+                        print(f"TC Voltage: {value}, Temperature: {tc_temp_f:.2f}°F")
+                        time.sleep(1)
+
             if scans > 0:
                 print(
                     f"# scans: {scans}, deviceBacklog: {device_backlog}, "
@@ -104,7 +108,24 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
         ljm.close(handle)
         print("Stream stopped and device closed.")
 
-
+def thermocouple_voltage_to_temperature(thermo_voltage, cj_temp_c):
+    """
+    Convert thermocouple voltage (in volts) to temperature in °F.
+    
+    This uses a simple linear approximation:
+      - K-type thermocouple sensitivity is approximately 41 µV/°C.
+      - dT (°C) = thermo_voltage (V) / 0.000041
+      - Thermocouple temperature (°C) = Cold Junction Temperature (°C) + dT
+      - Then convert °C to °F.
+    
+    Note: This linear approximation is valid only over a narrow temperature range.
+    """
+    # Calculate the temperature difference from the thermocouple voltage
+    dT_c = thermo_voltage / 0.000041  # in °C
+    tc_temp_c = cj_temp_c + dT_c        # thermocouple temperature in °C
+    tc_temp_f = (tc_temp_c * 9/5) + 32    # convert °C to °F
+    return tc_temp_f
+    
 def main():
     sensors = load_sensors_from_json("labjack_channels.json")
     if not sensors:

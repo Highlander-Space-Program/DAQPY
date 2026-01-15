@@ -140,7 +140,6 @@ def ask_cb37_pin(bank):
         print("  3) DAC0 or DAC1")
         choice = input("Select pin type (1-3): ").strip()
         if choice == "1":
-            # ask index 0..13
             try:
                 idx = int(input("Enter AIN index on CB37 (0-13): ").strip())
             except ValueError:
@@ -149,7 +148,6 @@ def ask_cb37_pin(bank):
             if idx < 0 or idx > 13:
                 print("AIN index out of range (0-13).")
                 continue
-            # X2 policy: allow only AIN0-3 for this project (per your request)
             if bank == "X2" and idx > 3:
                 print("On X2 we allow only AIN0-AIN3 for AIN configuration. Please choose another pin or bank.")
                 return None

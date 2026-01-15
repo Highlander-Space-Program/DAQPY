@@ -3,18 +3,9 @@
         "Type": "AIN",
         "AIN": "AIN0",
         "NegativeAIN": "AIN1",
-        "SensorType": "LoadCell",
+        "SensorType": "Thermocouple",
         "Differential": true,
-        "Bank": "X2",
-        "CB37_Index": 0
-    },
-    {
-        "Type": "AIN",
-        "AIN": "AIN51",
-        "NegativeAIN": "AIN59",
-        "SensorType": "LoadCell",
-        "Differential": true,
-        "Bank": "X3",
-        "CB37_Index": 3
+        "Bank": null,
+        "CB37_Index": null
     }
 ]
