@@ -25,8 +25,9 @@ def debug():
 # --- Conversion functions ---
 def thermocouple_voltage_to_temperature(voltage, cj_temp_c=25.0): #Also potentially wrong equation
     """Convert thermocouple voltage (V) to °F using same formula as streaming.py"""
-    dT_c = voltage / 0.000041
-    return dT_c
+    dT_c = voltage / 0.000041  # in °C
+    tc_temp_c = cj_temp_c + dT_c        # thermocouple temperature in °C
+    return tc_temp_c
 
 
 def loadcell_voltage_to_lbs(voltage):
@@ -65,14 +66,11 @@ def push_live_data():
                     value = row["voltage"]
 
                     if row["sensor"] == "Thermocouple":
-                        print(f"Thermocouple Voltage:{value}")
                         value = thermocouple_voltage_to_temperature(value)
                     elif row["sensor"] == "LoadCell":
-                        print(f"Load Cell Voltage:{value}")
                         value = loadcell_voltage_to_lbs(value)
 
                     dash_packet["channels"][dash_name] = value
-                time.sleep(3)
 
             # Send to all connected browsers
             socketio.emit("sensor_data", dash_packet)

@@ -59,6 +59,7 @@ class Sensor:
                     "Allowed: AIN0->AIN1, AIN2->AIN3, or Mux80 (AINx->AINx+8)."
                 )
 
+            ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
             ljm.eWriteName(handle, f"{self.ain}_NEGATIVE_CH", neg_num)
             mode_desc = f"DIFFERENTIAL ({self.ain} - {self.negative_ain})"
 
@@ -70,39 +71,39 @@ class Sensor:
         # ----------------------------
         # Sensor-type-specific config
         # ----------------------------
-        if self.sensor_type == "thermocouple":
-            # Thermocouple MUST be differential
-            if not self.differential:
-                raise ValueError(f"{self.ain} thermocouple must be differential")
+        # if self.sensor_type == "thermocouple":
+        #     # Thermocouple MUST be differential
+        #     if not self.differential:
+        #         raise ValueError(f"{self.ain} thermocouple must be differential")
 
-            # Enable Extended Feature: Type K thermocouple
-            ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 21)     # Type K
-            ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 1)   # Output in °C
+        #     # Enable Extended Feature: Type K thermocouple
+        #     ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 21)     # Type K
+        #     ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 1)   # Output in °C
 
-            # Tight range improves noise
-            ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
+        #     # Tight range improves noise
+        #     ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
 
-            print(f"Configured {self.ain} as THERMOCOUPLE (Type K, °C) | {mode_desc}")
-            return
+        #     print(f"Configured {self.ain} as THERMOCOUPLE (Type K, °C) | {mode_desc}")
+        #     return
 
-        elif self.sensor_type == "load_cell":
-            # Load cells: very small differential voltages
-            ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.01)
-            ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 13)      # Load cell / bridge
-            ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 2.0) # mV/V (example)
-            ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_B", 100) # full scale lbs
-            print(f"Configured {self.ain} as LOAD CELL | {mode_desc}")
+        # elif self.sensor_type == "load_cell":
+        #     # Load cells: very small differential voltages
+        #     ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.01)
+        #     ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 13)      # Load cell / bridge
+        #     ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 2.0) # mV/V (example)
+        #     ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_B", 100) # full scale lbs
+        #     print(f"Configured {self.ain} as LOAD CELL | {mode_desc}")
 
-        else:
-            # Default analog (pressure transducers, etc.)
-            ljm.eWriteName(handle, f"{self.ain}_RANGE", 10.0)
-            print(f"Configured {self.ain} as ANALOG | {mode_desc}")
+        # else:
+        #     # Default analog (pressure transducers, etc.)
+        #     ljm.eWriteName(handle, f"{self.ain}_RANGE", 10.0)
+        #     print(f"Configured {self.ain} as ANALOG | {mode_desc}")
 
         # ----------------------------
         # Common ADC settings
         # ----------------------------
-        ljm.eWriteName(handle, f"{self.ain}_RESOLUTION_INDEX", 8)
-        ljm.eWriteName(handle, f"{self.ain}_SETTLING_US", 10)
+        # ljm.eWriteName(handle, f"{self.ain}_RESOLUTION_INDEX", 8)
+        # ljm.eWriteName(handle, f"{self.ain}_SETTLING_US", 10)
 
 
     def read_value(self, ljm, handle):

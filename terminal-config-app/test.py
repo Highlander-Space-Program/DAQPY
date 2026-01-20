@@ -38,8 +38,8 @@ try:
         temperature = thermocouple_voltage_to_temperature(thermocouple_voltage, cj_temp_c=25.0)
         lbs = loadcell_voltage_to_lbs(load_cell_voltage)
 
-        print(f"Load Cell Voltage (V): {load_cell_voltage:.6f}, Force (lbs): {lbs:.6f}")
-        print(f"Thermocouple Voltage (V): {thermocouple_voltage:.6f}, Temperature (F): {temperature:.6f}")
+        print(f"Load Cell Voltage (V): {load_cell_voltage:}, Force (lbs): {lbs:.6f}")
+        print(f"Thermocouple Voltage (V): {thermocouple_voltage:}, Temperature (F): {temperature:.6f}")
         print("---")
 
         time.sleep(0.25)
