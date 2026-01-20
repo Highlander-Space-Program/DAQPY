@@ -7,5 +7,14 @@
         "Differential": true,
         "Bank": null,
         "CB37_Index": null
+    },
+    {
+        "Type": "AIN",
+        "AIN": "AIN2",
+        "NegativeAIN": "AIN3",
+        "SensorType": "LoadCell",
+        "Differential": true,
+        "Bank": null,
+        "CB37_Index": null
     }
 ]

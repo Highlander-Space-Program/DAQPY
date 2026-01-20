@@ -88,6 +88,9 @@ class Sensor:
         elif self.sensor_type == "load_cell":
             # Load cells: very small differential voltages
             ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.01)
+            ljm.eWriteName(handle, f"{self.ain}_EF_INDEX", 13)      # Load cell / bridge
+            ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_A", 2.0) # mV/V (example)
+            ljm.eWriteName(handle, f"{self.ain}_EF_CONFIG_B", 100) # full scale lbs
             print(f"Configured {self.ain} as LOAD CELL | {mode_desc}")
 
         else:

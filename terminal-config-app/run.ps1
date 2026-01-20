@@ -1,3 +1,3 @@
-Write-Host "Running terminal-config.py..."
+Write-Host "Running Clementine Dashboard"
 python terminal-config.py
-python streaming.py
+python app.py

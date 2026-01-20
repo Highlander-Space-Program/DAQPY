@@ -1,0 +1,89 @@
+# app.py
+from flask import Flask, render_template
+from flask_socketio import SocketIO
+from threading import Thread
+import time
+import streaming  # your streaming file
+
+app = Flask(__name__)
+socketio = SocketIO(app, cors_allowed_origins="*")
+
+
+# Serve the main dashboard page
+@app.route("/")
+def index():
+    return render_template("index.html")
+
+
+# Optional debug route to see raw live data
+@app.route("/debug")
+def debug():
+    with streaming.live_data_lock:
+        return streaming.live_data.copy()
+
+
+# --- Conversion functions ---
+def thermocouple_voltage_to_temperature(voltage, cj_temp_c=25.0): #Also potentially wrong equation
+    """Convert thermocouple voltage (V) to °F using same formula as streaming.py"""
+    dT_c = voltage / 0.000041
+    tc_temp_c = cj_temp_c + dT_c
+    return (tc_temp_c * 9/5) + 32 
+
+
+def loadcell_voltage_to_lbs(voltage):
+    """Convert load cell voltage to lbs of force"""
+    return (-(voltage * 51412) + 2.0204) / 0.45359237 #incorrect fix equation
+
+
+# Background thread to push live data to the dashboard
+def push_live_data():
+    # Map your AIN channels to dashboard channel names
+    AIN_TO_CHANNEL = {
+        "AIN0": "tc_1",
+        "AIN1": "tc_2",
+        "AIN2": "lc_1",
+        "AIN3": "lc_2",
+        "AIN4": "pt_1",
+        "AIN5": "pt_2",
+        "AIN6": "pt_3",
+        "AIN7": "flow_1"
+    }
+
+    while True:
+        with streaming.live_data_lock:
+            data_copy = streaming.live_data.copy()
+
+        if data_copy:
+            dash_packet = {
+                "timestamp": time.time(),
+                "board_id": "labjack",
+                "channels": {}
+            }
+
+            for ain_name, row in data_copy.items():
+                dash_name = AIN_TO_CHANNEL.get(ain_name)
+                if dash_name:
+                    value = row["voltage"]
+
+                    if row["sensor"] == "Thermocouple":
+                        value = thermocouple_voltage_to_temperature(value)
+                    elif row["sensor"] == "Load Cell":
+                        value = loadcell_voltage_to_lbs(value)
+
+                    dash_packet["channels"][dash_name] = value
+
+            # Send to all connected browsers
+            socketio.emit("sensor_data", dash_packet)
+
+        time.sleep(0.05)  # ~20 Hz update rate
+
+
+if __name__ == "__main__":
+    # Start LabJack stream in background
+    Thread(target=streaming.main, daemon=True).start()
+
+    # Start live data push thread
+    Thread(target=push_live_data, daemon=True).start()
+
+    # Run Flask + SocketIO server without reloader to avoid LabJack conflicts
+    socketio.run(app, host="0.0.0.0", port=5000, debug=True, use_reloader=False)

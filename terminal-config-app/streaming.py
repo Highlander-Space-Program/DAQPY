@@ -3,6 +3,10 @@ import time
 import csv
 from datetime import datetime
 from labjack import ljm
+from threading import Lock
+
+live_data = {}
+live_data_lock = Lock()
 
 from sensors import load_sensors_from_json, Sensor
 
@@ -79,19 +83,22 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
                 for ch_idx, ain_name in enumerate(channel_names):
                     value = data[base + ch_idx]
 
-                    writer.writerow({
+                    row = {
                         "device": "T7",
                         "ain": ain_name,
                         "sensor": sensor_type_by_name.get(ain_name),
                         "voltage": value,
                         "measurement": "sensor_data",
                         "timestamp": timestamp
-                    })
+                    }
 
-                    if sensor_type_by_name.get(ain_name) == "Thermocouple":
-                        tc_temp_f = thermocouple_voltage_to_temperature(value, 25)
-                        print(f"TC Voltage: {value}, Temperature: {tc_temp_f:.2f}°F")
-                        time.sleep(1)
+                    # Write to CSV (already doing this)
+                    writer.writerow(row)
+
+                    # Update live data for dashboard
+                    with live_data_lock:
+                        live_data[ain_name] = row
+
 
             if scans > 0:
                 print(
