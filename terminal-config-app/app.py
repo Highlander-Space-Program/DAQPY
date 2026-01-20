@@ -3,7 +3,7 @@ from flask import Flask, render_template
 from flask_socketio import SocketIO
 from threading import Thread
 import time
-import streaming  # your streaming file
+import streaming
 
 app = Flask(__name__)
 socketio = SocketIO(app, cors_allowed_origins="*")
@@ -26,13 +26,12 @@ def debug():
 def thermocouple_voltage_to_temperature(voltage, cj_temp_c=25.0): #Also potentially wrong equation
     """Convert thermocouple voltage (V) to °F using same formula as streaming.py"""
     dT_c = voltage / 0.000041
-    tc_temp_c = cj_temp_c + dT_c
-    return (tc_temp_c * 9/5) + 32 
+    return dT_c
 
 
 def loadcell_voltage_to_lbs(voltage):
-    """Convert load cell voltage to lbs of force"""
-    return (-(voltage * 51412) + 2.0204) / 0.45359237 #incorrect fix equation
+    """Convert load cell voltage to lbs"""
+    return (0.5104 * (voltage*pow(10,5))) * 2.20462
 
 
 # Background thread to push live data to the dashboard
@@ -66,11 +65,14 @@ def push_live_data():
                     value = row["voltage"]
 
                     if row["sensor"] == "Thermocouple":
+                        print(f"Thermocouple Voltage:{value}")
                         value = thermocouple_voltage_to_temperature(value)
-                    elif row["sensor"] == "Load Cell":
+                    elif row["sensor"] == "LoadCell":
+                        print(f"Load Cell Voltage:{value}")
                         value = loadcell_voltage_to_lbs(value)
 
                     dash_packet["channels"][dash_name] = value
+                time.sleep(3)
 
             # Send to all connected browsers
             socketio.emit("sensor_data", dash_packet)
