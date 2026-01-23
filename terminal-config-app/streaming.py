@@ -3,12 +3,25 @@ import time
 import csv
 from datetime import datetime
 from labjack import ljm
-from threading import Lock
+from threading import Lock, Thread
 
 live_data = {}
 live_data_lock = Lock()
 
 from sensors import load_sensors_from_json, Sensor
+
+# counter = 0
+
+# def count():
+#     before = counter
+#     while True:
+#         delta = counter - before
+#         print(f"{delta=} hz")
+#         before = counter
+#         time.sleep(1)
+
+# my_thread = Thread(target=count)
+# my_thread.start()
 
 def open_t7(connection_type: str = "USB"):
     print(f"Opening T7 over {connection_type}...")
@@ -39,6 +52,7 @@ def configure_stream_params():
 
 
 def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str]):
+    # global counter
     scan_rate_hz, scans_per_read = configure_stream_params()
     num_channels = len(channel_names)
 
@@ -49,12 +63,21 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
     print(f"  Channels:       {channel_names}")
     print(f"  Scans per read: {scans_per_read}")
 
+    # actual_scan_rate = ljm.eStreamStart(
+    #     handle,
+    #     scans_per_read,
+    #     num_channels,
+    #     scan_list,
+    #     scan_rate_hz,
+    # )
+
+    
     actual_scan_rate = ljm.eStreamStart(
         handle,
-        scans_per_read,
+        1,
         num_channels,
         scan_list,
-        scan_rate_hz,
+        200,
     )
 
     print(f"Actual stream scan rate: {actual_scan_rate} Hz")
@@ -74,6 +97,7 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
     try:
         while True:
             data, device_backlog, ljm_backlog = ljm.eStreamRead(handle)
+            # counter += 1
             scans = len(data) // num_channels
 
             for scan_idx in range(scans):
@@ -101,10 +125,11 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
 
 
             if scans > 0:
-                print(
-                    f"# scans: {scans}, deviceBacklog: {device_backlog}, "
-                    f"LJMBacklog: {ljm_backlog}"
-                )
+                # print(
+                #     f"# scans: {scans}, deviceBacklog: {device_backlog}, "
+                #     f"LJMBacklog: {ljm_backlog}"
+                # )
+                pass
 
     except KeyboardInterrupt:
         print("\nStopping stream (Ctrl+C detected)...")

@@ -59,7 +59,7 @@ class Sensor:
                     "Allowed: AIN0->AIN1, AIN2->AIN3, or Mux80 (AINx->AINx+8)."
                 )
 
-            ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.1)
+            ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.01)
             ljm.eWriteName(handle, f"{self.ain}_NEGATIVE_CH", neg_num)
             mode_desc = f"DIFFERENTIAL ({self.ain} - {self.negative_ain})"
 

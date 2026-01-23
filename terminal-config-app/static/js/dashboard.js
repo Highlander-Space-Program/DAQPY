@@ -93,6 +93,7 @@ function initWebSocket() {
 
     // Telemetry data from sensor boards
     state.socket.on('sensor_data', (data) => {
+        // console.log(data)
         handleSensorData(data);
     });
 
@@ -176,7 +177,7 @@ function updateConnectionStatus(connected) {
 function handleSensorData(data) {
     const timestamp = new Date(data.timestamp * 1000);
     const maxHistory = CONFIG.CHART_HISTORY[state.timeWindow];
-    
+
     // Store data for each channel
     Object.entries(data.channels).forEach(([channel, value]) => {
         if (state.dataBuffers[channel]) {
@@ -244,6 +245,7 @@ function updateChartValues(channels) {
         document.getElementById('chart-val-pc').textContent = `${channels.pt_1.toFixed(1)} psi`;
     }
     if (channels.lc_1 !== undefined) {
+        // console.log(channels.lc_1)
         document.getElementById('chart-val-thrust').textContent = `${Math.round(channels.lc_1).toLocaleString()} lbf`;
     }
     if (channels.flow_1 !== undefined) {
@@ -711,7 +713,7 @@ function initCharts() {
     
     // Overview charts
     state.charts['overview-pc'] = createChart('chart-pc', baseOptions, 0, 1000);
-    state.charts['overview-thrust'] = createChart('chart-thrust', baseOptions, 0, 30000);
+    state.charts['overview-thrust'] = createChart('chart-thrust', baseOptions, 0, 30);
     state.charts['overview-flow'] = createChart('chart-flow', baseOptions, 0, 50);
     state.charts['overview-altitude'] = createChart('chart-altitude', baseOptions, 0, 50000);
     

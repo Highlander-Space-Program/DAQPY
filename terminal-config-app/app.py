@@ -29,11 +29,15 @@ def thermocouple_voltage_to_temperature(voltage, cj_temp_c=25.0): #Also potentia
     tc_temp_c = cj_temp_c + dT_c        # thermocouple temperature in °C
     return tc_temp_c
 
-
 def loadcell_voltage_to_lbs(voltage):
     """Convert load cell voltage to lbs"""
     return (0.5104 * (voltage*pow(10,5))) * 2.20462
 
+def total_loadcell_voltage_to_lbs(voltage):
+    return ((-0.4995 * (voltage*pow(10,5))) + 0.8905) * 2.20462
+
+def pressure_voltage_to_lbs(voltage):
+    return [(voltage - 0.5) / (4.0) ] * 1600
 
 # Background thread to push live data to the dashboard
 def push_live_data():
@@ -41,8 +45,8 @@ def push_live_data():
     AIN_TO_CHANNEL = {
         "AIN0": "tc_1",
         "AIN1": "tc_2",
-        "AIN2": "lc_1",
-        "AIN3": "lc_2",
+        "AIN50": "lc_1",
+        "AIN52": "lc_2",
         "AIN4": "pt_1",
         "AIN5": "pt_2",
         "AIN6": "pt_3",
@@ -65,10 +69,17 @@ def push_live_data():
                 if dash_name:
                     value = row["voltage"]
 
+                    total_loadcell_voltage = 0.0
+
                     if row["sensor"] == "Thermocouple":
                         value = thermocouple_voltage_to_temperature(value)
+                    elif row["sensor"] == "Pressure":
+                        value = pressure_voltage_to_lbs(value)
                     elif row["sensor"] == "LoadCell":
-                        value = loadcell_voltage_to_lbs(value)
+                        for ain_name, row in data_copy.items():
+                            if row["sensor"] == "LoadCell":
+                                total_loadcell_voltage += row["voltage"]
+                        value = total_loadcell_voltage_to_lbs(total_loadcell_voltage)
 
                     dash_packet["channels"][dash_name] = value
 
