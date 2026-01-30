@@ -19,8 +19,11 @@ def loadcell_voltage_to_lbs(voltage):
     """Convert load cell voltage to lbs of force"""
     return (0.5104 * (voltage*pow(10,5))) * 2.20462
 
-def allLoadCellVoltagetolbs(voltage):
-    return (18566.66 * voltage) + 1.067
+def total_loadcell_voltage_to_lbs(voltage):
+    return ((-0.4995 * (voltage*pow(10,5))) + 0.8905) * 2.20462
+
+def pressure_voltage_to_psi(voltage):
+    return ((voltage - 0.5) / 4.0) * 1600
 
 # --- Configure differential channels ---
 # Load Cell: AIN2 (positive) - AIN3 (negative)
@@ -30,26 +33,35 @@ def allLoadCellVoltagetolbs(voltage):
 loadcell_ains = [48, 49, 50, 51]
 
 for ain in loadcell_ains:
-    ljm.eWriteName(handle, f"AIN{ain}_RANGE", 0.1)          # ±0.1 V
+    ljm.eWriteName(handle, f"AIN{ain}_RANGE", 0.01)          # ±0.1 V
     ljm.eWriteName(handle, f"AIN{ain}_NEGATIVE_CH", ain+8) # 48→56, 49→57, etc.
+
+# Pressure transducer on AIN7 (single-ended)
+ljm.eWriteName(handle, "AIN55_RANGE", .01)      # ±10 V (safe default)
+ljm.eWriteName(handle, "AIN55_NEGATIVE_CH", 199) # single-ended
 
 try:
     while True:
-        # ---- LOAD CELLS (aggregate first) ----
-
+        # ---- LOAD CELLS (average + sum) ----
         total_loadcell_voltage = 0.0
 
-        for i in range (1, 100):
+        for _ in range(100):
             for ain in loadcell_ains:
-                v = ljm.eReadName(handle, f"AIN{ain}")
-                total_loadcell_voltage += v
+                total_loadcell_voltage += ljm.eReadName(handle, f"AIN{ain}")
 
         total_loadcell_voltage /= 100
-        total_lbs = allLoadCellVoltagetolbs(total_loadcell_voltage)
-        print("Voltage (V) Scaled by 10^5:", total_loadcell_voltage*pow(10,5))
-        print(f"Total Force (lbs): {total_lbs:}")
-        print("---")
+        total_lbs = total_loadcell_voltage_to_lbs(total_loadcell_voltage)
 
+        print("Voltage (V) Scaled by 10^5:", total_loadcell_voltage * 1e5)
+        print(f"Total Force (lbs): {total_lbs:.6f}")
+
+        # ---- PRESSURE TRANSDUCER ----
+        pressure_voltage = ljm.eReadName(handle, "AIN7")
+        pressure = pressure_voltage_to_psi(pressure_voltage)
+        print(f"Pressure Transducer Voltage (V): {pressure_voltage:.6f}")
+        print(f"PSI: {pressure}")
+
+        print("---")
         time.sleep(1)
 
 except KeyboardInterrupt:

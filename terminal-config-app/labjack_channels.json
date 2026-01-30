@@ -34,5 +34,22 @@
         "Differential": true,
         "Bank": "X3",
         "CB37_Index": 3
+    },
+    {
+        "Type": "AIN",
+        "AIN": "AIN55",
+        "SensorType": "Pressure",
+        "Differential": false,
+        "Bank": "X3",
+        "CB37_Index": 7
+    },
+    {
+        "Type": "AIN",
+        "AIN": "AIN52",
+        "NegativeAIN": "AIN60",
+        "SensorType": "Thermocouple",
+        "Differential": true,
+        "Bank": "X3",
+        "CB37_Index": 4
     }
 ]

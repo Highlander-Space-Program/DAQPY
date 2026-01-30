@@ -712,16 +712,16 @@ function initCharts() {
     };
     
     // Overview charts
-    state.charts['overview-pc'] = createChart('chart-pc', baseOptions, 0, 1000);
-    state.charts['overview-thrust'] = createChart('chart-thrust', baseOptions, 0, 30);
+    state.charts['overview-pc'] = createChart('chart-pc', baseOptions, 0, 300);
+    state.charts['overview-thrust'] = createChart('chart-thrust', baseOptions, 0, 300);
     state.charts['overview-flow'] = createChart('chart-flow', baseOptions, 0, 50);
     state.charts['overview-altitude'] = createChart('chart-altitude', baseOptions, 0, 50000);
     
     // Telemetry charts
-    state.charts['telem-pc'] = createChart('telem-chart-pc', baseOptions, 0, 1000);
+    state.charts['telem-pc'] = createChart('telem-chart-pc', baseOptions, 0, 300);
     state.charts['telem-lox'] = createChart('telem-chart-lox', baseOptions, 0, 600);
     state.charts['telem-fuel'] = createChart('telem-chart-fuel', baseOptions, 0, 600);
-    state.charts['telem-thrust'] = createChart('telem-chart-thrust', baseOptions, 0, 30000);
+    state.charts['telem-thrust'] = createChart('telem-chart-thrust', baseOptions, 0, 300);
     state.charts['telem-flow'] = createChart('telem-chart-flow', baseOptions, 0, 50);
     state.charts['telem-weight'] = createChart('telem-chart-weight', baseOptions, 0, 5000);
     state.charts['telem-gyro'] = createChart('telem-chart-gyro', baseOptions, -10, 10);
