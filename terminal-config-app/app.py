@@ -30,8 +30,8 @@ def thermocouple_voltage_to_temperature(voltage, cj_temp_c=25.0): #Also potentia
     return tc_temp_c
 
 def loadcell_voltage_to_lbs(voltage):
-    """Convert load cell voltage to lbs"""
-    return (0.5104 * (voltage*pow(10,5))) * 2.20462
+    # return (0.5104 * (voltage*pow(10,5))) * 2.20462
+    return ((-0.4995 * (voltage*pow(10,5))) + 0.8905) * 2.20462
 
 def total_loadcell_voltage_to_lbs(voltage):
     return ((-0.4995 * (voltage*pow(10,5))) + 0.8905) * 2.20462
@@ -39,16 +39,25 @@ def total_loadcell_voltage_to_lbs(voltage):
 def pressure_voltage_to_psi(voltage):
     return ((voltage - 0.5) / (4.0) ) * 1600
 
+def calibration(voltage):
+    max_load = 1102.31 # lbs
+    sens = 2.0 # mV / V
+    excitation_voltage = 5.0 # V
+
+    full_scale_voltage = sens * excitation_voltage / 1000
+
+    return -1 * (max_load / full_scale_voltage) * voltage
+
 # Background thread to push live data to the dashboard
 def push_live_data():
     # Map your AIN channels to dashboard channel names
     AIN_TO_CHANNEL = {
-        "AIN52": "tc_1",
-        "AIN1": "tc_2",
-        "AIN50": "lc_1",
+        "AIN51": "tc_1",
+        "AIN49": "tc_2",
+        "AIN48": "lc_1",
         "AIN0": "lc_2",
-        "AIN55": "pt_1",
-        "AIN5": "pt_2",
+        "AIN52": "pt_1",
+        "AIN54": "pt_2",
         "AIN6": "pt_3",
         "AIN7": "flow_1"
     }
@@ -83,7 +92,7 @@ def push_live_data():
                     elif row["sensor"] == "Pressure":
                         value = pressure_voltage_to_psi(value)
                     elif row["sensor"] == "LoadCell":
-                        value = total_loadcell_lbs
+                        value = calibration(value)
 
                     dash_packet["channels"][dash_name] = value
 

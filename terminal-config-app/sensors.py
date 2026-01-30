@@ -61,7 +61,7 @@ class Sensor:
 
             ljm.eWriteName(handle, f"{self.ain}_RANGE", 0.01)
             ljm.eWriteName(handle, f"{self.ain}_NEGATIVE_CH", neg_num)
-            mode_desc = f"DIFFERENTIAL ({self.ain} - {self.negative_ain})"
+            # mode_desc = f"DIFFERENTIAL ({self.ain} - {self.negative_ain})"
 
         else:
             # Single-ended (GND reference)

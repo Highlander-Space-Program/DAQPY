@@ -77,7 +77,7 @@ def run_stream(handle, scan_list, sensors: list[Sensor], channel_names: list[str
         1,
         num_channels,
         scan_list,
-        150,
+        50,
     )
 
     print(f"Actual stream scan rate: {actual_scan_rate} Hz")
