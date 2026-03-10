@@ -48,19 +48,24 @@ def calibration(voltage):
 
     return -1 * (max_load / full_scale_voltage) * voltage
 
+
+
 # Background thread to push live data to the dashboard
 def push_live_data():
     # Map your AIN channels to dashboard channel names
     AIN_TO_CHANNEL = {
-        "AIN51": "tc_1",
-        "AIN49": "tc_2",
+        "AIN52": "tc_1",
+        "AIN51": "tc_2",
         "AIN48": "lc_1",
-        "AIN0": "lc_2",
-        "AIN52": "pt_1",
-        "AIN54": "pt_2",
+        "AIN21": "lc_2",
+        "AIN50": "pt_1",
+        "AIN10": "pt_2",
         "AIN6": "pt_3",
         "AIN7": "flow_1"
     }
+
+    output = [0] * 50
+    i = 0
 
     while True:
         with streaming.live_data_lock:
@@ -92,7 +97,11 @@ def push_live_data():
                     elif row["sensor"] == "Pressure":
                         value = pressure_voltage_to_psi(value)
                     elif row["sensor"] == "LoadCell":
-                        value = calibration(value)
+                        # value = calibration(value)
+                        value = loadcell_voltage_to_lbs(value)
+                        output[i%len(output)] = value
+                        i += 1
+                        value = sum(output)/len(output)
 
                     dash_packet["channels"][dash_name] = value
 

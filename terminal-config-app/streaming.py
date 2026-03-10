@@ -46,8 +46,8 @@ def build_scan_list(sensors: list[Sensor]):
 
 
 def configure_stream_params():
-    scan_rate_hz = 200
-    scans_per_read = 200
+    scan_rate_hz = 100
+    scans_per_read = 100
     return scan_rate_hz, scans_per_read
 
 

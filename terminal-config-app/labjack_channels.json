@@ -1,45 +1,28 @@
 [
     {
         "Type": "AIN",
-        "AIN": "AIN54",
-        "SensorType": "Pressure",
-        "Differential": false,
-        "Bank": "X3",
-        "CB37_Index": 6
-    },
-    {
-        "Type": "AIN",
         "AIN": "AIN48",
         "NegativeAIN": "AIN56",
         "SensorType": "LoadCell",
         "Differential": true,
-        "Bank": "X3",
-        "CB37_Index": 0
-    },
-    {
-        "Type": "AIN",
-        "AIN": "AIN52",
-        "SensorType": "Pressure",
-        "Differential": false,
-        "Bank": "X3",
-        "CB37_Index": 4
-    },
-    {
-        "Type": "AIN",
-        "AIN": "AIN49",
-        "NegativeAIN": "AIN57",
-        "SensorType": "Thermocouple",
-        "Differential": true,
-        "Bank": "X3",
-        "CB37_Index": 1
+        "Bank": null,
+        "CB37_Index": null
     },
     {
         "Type": "AIN",
         "AIN": "AIN50",
-        "NegativeAIN": "AIN58",
+        "SensorType": "Pressure",
+        "Differential": false,
+        "Bank": "X3",
+        "CB37_Index": 2
+    },
+    {
+        "Type": "AIN",
+        "AIN": "AIN52",
+        "NegativeAIN": "AIN60",
         "SensorType": "Thermocouple",
         "Differential": true,
         "Bank": "X3",
-        "CB37_Index": 3
+        "CB37_Index": 4
     }
 ]
